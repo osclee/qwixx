@@ -201,7 +201,10 @@ verify multiplayer behavior during development.
 
 Dockerfile is a multi-stage build (compiles all three packages, ships a
 single runtime image running the Fastify server, which also serves the
-built client — one process, one port). See `README.md` for the full Azure
-Container Apps / App Service deployment walkthrough; the short version is
-Container Apps pinned to exactly one replica with an Azure Files mount at
-`QUIXX_DB_PATH`, for the single-instance reason above.
+built client — one process, one port). The app is already deployed to
+**Azure Container Apps** (single replica, `QUIXX_DB_PATH` on an Azure Files
+mount, for the single-instance reason above). Deploys are automatic: a
+GitHub Actions workflow
+(`.github/workflows/qwixx-AutoDeployTrigger-...yml`) builds and pushes the
+image to ACR and updates the Container App on every push to `master` — no
+manual deploy steps. See `README.md` for a short summary.

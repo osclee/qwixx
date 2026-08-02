@@ -2,7 +2,7 @@
 
 Online multiplayer Qwixx: a browser client (React) talking over WebSocket to
 an authoritative Node/Fastify server, with a shared rule engine used by both
-sides.
+sides. Supports bot players (easy/medium/hard) for filling empty seats.
 
 ```
 packages/
@@ -69,64 +69,10 @@ built client's static files — one process, one port, no separate frontend
 host needed. The container writes its SQLite file to `/data`; mount a
 volume there for persistence across restarts.
 
-## Deploying to Azure
+## Deployment
 
-Because the server is single-instance and stateful, **Azure Container Apps**
-is the best fit: it supports WebSockets natively, lets you pin `minReplicas`
-and `maxReplicas` to `1` (no accidental scale-out), and can mount a durable
-Azure Files share for the SQLite path.
-
-1. **Build and push the image** to Azure Container Registry:
-
-   ```bash
-   az acr build --registry <your-acr-name> --image quixx:latest .
-   ```
-
-2. **Create a Container Apps environment** (if you don't have one) and a
-   storage mount backed by Azure Files, so `/data` survives restarts and
-   redeploys:
-
-   ```bash
-   az containerapp env storage set \
-     --name <env-name> --resource-group <rg> \
-     --storage-name quixx-data --azure-file-account-name <storage-account> \
-     --azure-file-account-key <storage-key> --azure-file-share-name quixx-data \
-     --access-mode ReadWrite
-   ```
-
-3. **Deploy the container app**, pinned to a single replica, with the
-   volume mounted at `/data` and WebSockets allowed (Container Apps allows
-   WebSocket traffic through its ingress by default — no extra flag needed,
-   just make sure `--target-port` matches `PORT`):
-
-   ```bash
-   az containerapp create \
-     --name quixx --resource-group <rg> --environment <env-name> \
-     --image <your-acr-name>.azurecr.io/quixx:latest \
-     --target-port 3000 --ingress external \
-     --min-replicas 1 --max-replicas 1 \
-     --env-vars QUIXX_DB_PATH=/data/quixx.sqlite
-   ```
-
-   Then attach the volume mount (`az containerapp update` with
-   `--set-env-vars` / a YAML revision spec is the more reliable path for
-   volume mounts — see the [Container Apps storage docs](https://learn.microsoft.com/azure/container-apps/storage-mounts)
-   for the exact `volumes`/`volumeMounts` YAML shape).
-
-### Alternative: Azure App Service (Linux, Node)
-
-App Service works too, with caveats:
-
-- Enable **Web sockets** under Configuration → General settings (off by
-  default).
-- Set **Always On** so the process doesn't idle out mid-game.
-- Do **not** enable autoscale / multiple instances, for the same
-  single-instance reason as above.
-- App Service's `/home` directory is persistent and shared across restarts
-  on the same plan — point `QUIXX_DB_PATH` at a path under `/home` (e.g.
-  `/home/data/quixx.sqlite`) rather than the container's ephemeral local
-  disk.
-- Deploy via the container (`az webapp create --deployment-container-image-name ...`)
-  pointing at the same image built for Container Apps above, or via
-  `az webapp up` from source if you'd rather let App Service build it (in
-  which case set `WEBSITES_PORT=3000` so it knows where the server listens).
+The app is deployed and running on **Azure Container Apps** (single
+replica, stateful — see above). Every push to `master` triggers
+[`.github/workflows/qwixx-AutoDeployTrigger-...yml`](.github/workflows/),
+which builds the Docker image and pushes a new revision automatically — no
+manual deploy steps needed.

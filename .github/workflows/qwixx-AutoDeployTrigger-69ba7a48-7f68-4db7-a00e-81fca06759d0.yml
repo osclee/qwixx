@@ -1,0 +1,49 @@
+name: Trigger auto deployment for qwixx
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ master ]
+    paths:
+    - '**'
+    - '.github/workflows/qwixx-AutoDeployTrigger-69ba7a48-7f68-4db7-a00e-81fca06759d0.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.QWIXX_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.QWIXX_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.QWIXX_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          _targetLabelKey_: _targetLabel_
+          registryUrl: qwixxacr26922.azurecr.io
+          registryUsername: ${{ secrets.QWIXX_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.QWIXX_REGISTRY_PASSWORD }}
+          containerAppName: qwixx
+          resourceGroup: qwixx-rg
+          imageToBuild: qwixxacr26922.azurecr.io/qwixx:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+

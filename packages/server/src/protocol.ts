@@ -1,0 +1,164 @@
+import { z } from "zod";
+
+/**
+ * The full wire contract, in one place, validated with zod on every inbound
+ * message. This module has zero server-internals imports so the client can
+ * import it too — there is exactly one definition of what's legal to send.
+ */
+
+const colorSchema = z.enum(["red", "yellow", "green", "blue"]);
+const whiteDieSchema = z.enum(["w1", "w2"]);
+
+// ---------- Client -> Server ----------
+
+export const createTableMsg = z.object({
+  type: z.literal("create_table"),
+  nickname: z.string().trim().min(1).max(20),
+});
+
+export const joinTableMsg = z.object({
+  type: z.literal("join_table"),
+  roomCode: z.string().trim().min(4).max(8),
+  nickname: z.string().trim().min(1).max(20),
+});
+
+export const rejoinMsg = z.object({
+  type: z.literal("rejoin"),
+  sessionToken: z.string().uuid(),
+});
+
+export const startGameMsg = z.object({
+  type: z.literal("start_game"),
+});
+
+export const rollDiceMsg = z.object({
+  type: z.literal("roll_dice"),
+});
+
+export const newGameMsg = z.object({
+  type: z.literal("new_game"),
+});
+
+export const submitWhiteMsg = z.object({
+  type: z.literal("submit_white"),
+  action: z.union([
+    z.object({ kind: z.literal("cross"), color: colorSchema, value: z.number().int() }),
+    z.object({ kind: z.literal("pass") }),
+  ]),
+});
+
+export const submitColorMsg = z.object({
+  type: z.literal("submit_color"),
+  action: z.union([
+    z.object({
+      kind: z.literal("cross"),
+      whiteDie: whiteDieSchema,
+      color: colorSchema,
+      value: z.number().int(),
+    }),
+    z.object({ kind: z.literal("pass") }),
+  ]),
+});
+
+export const leaveTableMsg = z.object({
+  type: z.literal("leave_table"),
+});
+
+export const endGameMsg = z.object({
+  type: z.literal("end_game"),
+});
+
+export const addBotMsg = z.object({
+  type: z.literal("add_bot"),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+});
+
+export const removeBotMsg = z.object({
+  type: z.literal("remove_bot"),
+  playerId: z.string(),
+});
+
+export const clientMessageSchema = z.discriminatedUnion("type", [
+  createTableMsg,
+  joinTableMsg,
+  rejoinMsg,
+  startGameMsg,
+  rollDiceMsg,
+  newGameMsg,
+  submitWhiteMsg,
+  submitColorMsg,
+  leaveTableMsg,
+  endGameMsg,
+  addBotMsg,
+  removeBotMsg,
+]);
+
+export type ClientMessage = z.infer<typeof clientMessageSchema>;
+
+// ---------- Server -> Client ----------
+
+export interface PublicRowState {
+  crossedValues: number[]; // actual die values, in crossing order (not raw indices)
+  lastCrossedIndex: number;
+  locked: boolean;
+  marks: number;
+  score: number;
+}
+
+export interface PublicSheet {
+  playerId: string;
+  nickname: string;
+  connected: boolean;
+  isBot: boolean;
+  rows: Record<"red" | "yellow" | "green" | "blue", PublicRowState>;
+  penalties: number;
+}
+
+export interface PublicResult {
+  playerId: string;
+  nickname: string;
+  total: number;
+  penaltyPoints: number;
+  rowScores: Record<"red" | "yellow" | "green" | "blue", number>;
+  rank: number;
+}
+
+export interface SnapshotMessage {
+  type: "snapshot";
+  roomCode: string;
+  you: string;
+  hostPlayerId: string;
+  lobbyState: "LOBBY" | "IN_PROGRESS" | "FINISHED";
+  phase: "LOBBY" | "ROLLING" | "WHITE" | "COLOR" | "RESOLVE" | "FINISHED";
+  activePlayerId: string | null;
+  diceInPlay: ("red" | "yellow" | "green" | "blue")[];
+  removedColors: ("red" | "yellow" | "green" | "blue")[];
+  roll: { w1: number; w2: number; red?: number; yellow?: number; green?: number; blue?: number } | null;
+  sheets: PublicSheet[];
+  turnSeq: number;
+  phaseDeadline: number | null; // epoch ms
+  serverNow: number; // epoch ms, for client clock-skew correction
+  results: PublicResult[] | null;
+  whiteSubmitted: string[]; // playerIds who have answered this WHITE phase
+}
+
+export interface JoinedMessage {
+  type: "joined";
+  sessionToken: string;
+  roomCode: string;
+  playerId: string;
+}
+
+export interface EventMessage {
+  type: "event";
+  text: string;
+  at: number;
+}
+
+export interface ErrorMessage {
+  type: "error";
+  code: string;
+  message: string;
+}
+
+export type ServerMessage = SnapshotMessage | JoinedMessage | EventMessage | ErrorMessage;

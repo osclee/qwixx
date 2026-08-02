@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.env
+scripts/.provision-names.env
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+.DS_Store

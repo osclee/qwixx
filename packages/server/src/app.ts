@@ -5,7 +5,7 @@ import fastifyStatic from "@fastify/static";
 import { MemoryStore } from "./store/memory.js";
 import { tryCreateSqliteStore } from "./store/sqlite.js";
 import { TableRegistry } from "./registry.js";
-import { registerWebSocketRoute } from "./ws.js";
+import { registerWebSocketRoute, type WebSocketRouteOptions } from "./ws.js";
 import type { GameStore } from "./store/index.js";
 import type { TableDeps } from "./table.js";
 
@@ -18,6 +18,8 @@ export interface BuildAppOptions {
   /** Directory of the built client to serve statically. Omit to skip static serving (tests don't need it). */
   clientDist?: string | null;
   logger?: boolean;
+  /** Per-connection inbound WS message throttle. Omit for the production default. */
+  rateLimit?: WebSocketRouteOptions["rateLimit"];
 }
 
 export async function buildApp(
@@ -35,7 +37,7 @@ export async function buildApp(
   registry.restoreFromStore();
 
   await app.register(fastifyWebsocket);
-  registerWebSocketRoute(app, registry);
+  registerWebSocketRoute(app, registry, opts.rateLimit ? { rateLimit: opts.rateLimit } : {});
 
   app.get("/api/health", async () => ({ ok: true }));
 

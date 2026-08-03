@@ -42,7 +42,11 @@ export const newGameMsg = z.object({
 export const submitWhiteMsg = z.object({
   type: z.literal("submit_white"),
   action: z.union([
-    z.object({ kind: z.literal("cross"), color: colorSchema, value: z.number().int() }),
+    z.object({
+      kind: z.literal("cross"),
+      color: colorSchema,
+      value: z.number().int(),
+    }),
     z.object({ kind: z.literal("pass") }),
   ]),
 });
@@ -140,7 +144,14 @@ export interface SnapshotMessage {
   activePlayerId: string | null;
   diceInPlay: ("red" | "yellow" | "green" | "blue")[];
   removedColors: ("red" | "yellow" | "green" | "blue")[];
-  roll: { w1: number; w2: number; red?: number; yellow?: number; green?: number; blue?: number } | null;
+  roll: {
+    w1: number;
+    w2: number;
+    red?: number;
+    yellow?: number;
+    green?: number;
+    blue?: number;
+  } | null;
   sheets: PublicSheet[];
   turnSeq: number;
   phaseDeadline: number | null; // epoch ms
@@ -168,12 +179,18 @@ export interface ErrorMessage {
   message: string;
 }
 
-export type ServerMessage = SnapshotMessage | JoinedMessage | EventMessage | ErrorMessage;
+export type ServerMessage =
+  SnapshotMessage | JoinedMessage | EventMessage | ErrorMessage;
 
 // Hand-maintained, since ServerMessage isn't zod-validated (the server never
 // validates its own outbound messages). Compared against the equivalent list
 // in packages/client/src/net/protocol.ts by test/protocolSync.test.ts.
-export const SERVER_MESSAGE_TYPES = ["snapshot", "joined", "event", "error"] as const;
+export const SERVER_MESSAGE_TYPES = [
+  "snapshot",
+  "joined",
+  "event",
+  "error",
+] as const;
 
 type AssertNever<T extends never> = T;
 // Fails to typecheck if a ServerMessage variant is added without adding it

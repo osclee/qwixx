@@ -7,7 +7,10 @@ import { RateLimiter, type RateLimiterOptions } from "./rateLimiter.js";
 
 // Generous enough for legitimate rapid play (e.g. mashing roll/cross), tight
 // enough to blunt a misbehaving or malicious client spamming the socket.
-const DEFAULT_RATE_LIMIT: RateLimiterOptions = { capacity: 20, refillPerSecond: 10 };
+const DEFAULT_RATE_LIMIT: RateLimiterOptions = {
+  capacity: 20,
+  refillPerSecond: 10,
+};
 
 function socketAdapter(ws: WebSocket): OutSocket {
   return {
@@ -55,7 +58,13 @@ export function registerWebSocketRoute(
       try {
         parsed = JSON.parse(raw.toString());
       } catch {
-        ws.send(JSON.stringify({ type: "error", code: "bad_json", message: "Malformed JSON" }));
+        ws.send(
+          JSON.stringify({
+            type: "error",
+            code: "bad_json",
+            message: "Malformed JSON",
+          }),
+        );
         return;
       }
 
@@ -74,17 +83,30 @@ export function registerWebSocketRoute(
 
       switch (msg.type) {
         case "create_table": {
-          const { table, sessionToken, playerId } = registry.createTable(msg.nickname);
+          const { table, sessionToken, playerId } = registry.createTable(
+            msg.nickname,
+          );
           bind(table, playerId);
           ws.send(
-            JSON.stringify({ type: "joined", sessionToken, roomCode: table.roomCode, playerId }),
+            JSON.stringify({
+              type: "joined",
+              sessionToken,
+              roomCode: table.roomCode,
+              playerId,
+            }),
           );
           break;
         }
         case "join_table": {
           const res = registry.joinTable(msg.roomCode, msg.nickname);
           if (!res.ok) {
-            ws.send(JSON.stringify({ type: "error", code: "join_failed", message: res.error }));
+            ws.send(
+              JSON.stringify({
+                type: "error",
+                code: "join_failed",
+                message: res.error,
+              }),
+            );
             return;
           }
           bind(res.table, res.playerId);
@@ -101,7 +123,13 @@ export function registerWebSocketRoute(
         case "rejoin": {
           const res = registry.rejoin(msg.sessionToken);
           if (!res.ok) {
-            ws.send(JSON.stringify({ type: "error", code: "rejoin_failed", message: res.error }));
+            ws.send(
+              JSON.stringify({
+                type: "error",
+                code: "rejoin_failed",
+                message: res.error,
+              }),
+            );
             return;
           }
           bind(res.table, res.playerId);
@@ -118,29 +146,41 @@ export function registerWebSocketRoute(
         case "start_game": {
           if (!boundTable || !boundPlayerId) return unbound();
           const res = boundTable.startGame(boundPlayerId);
-          if (!res.ok) boundTable.sendError(boundPlayerId, "start_failed", res.error);
+          if (!res.ok)
+            boundTable.sendError(boundPlayerId, "start_failed", res.error);
           break;
         }
         case "roll_dice": {
           if (!boundTable || !boundPlayerId) return unbound();
           const res = boundTable.submitRoll(boundPlayerId);
-          if (!res.ok) boundTable.sendError(boundPlayerId, "roll_failed", res.error);
+          if (!res.ok)
+            boundTable.sendError(boundPlayerId, "roll_failed", res.error);
           break;
         }
         case "new_game": {
           if (!boundTable || !boundPlayerId) return unbound();
           const res = boundTable.newGame(boundPlayerId);
-          if (!res.ok) boundTable.sendError(boundPlayerId, "new_game_failed", res.error);
+          if (!res.ok)
+            boundTable.sendError(boundPlayerId, "new_game_failed", res.error);
           break;
         }
         case "submit_white": {
           if (!boundTable || !boundPlayerId) return unbound();
           const action =
             msg.action.kind === "cross"
-              ? ({ kind: "cross", color: msg.action.color, value: msg.action.value } as const)
+              ? ({
+                  kind: "cross",
+                  color: msg.action.color,
+                  value: msg.action.value,
+                } as const)
               : ({ kind: "pass" } as const);
           const res = boundTable.submitWhite(boundPlayerId, action);
-          if (!res.ok) boundTable.sendError(boundPlayerId, "submit_white_failed", res.error);
+          if (!res.ok)
+            boundTable.sendError(
+              boundPlayerId,
+              "submit_white_failed",
+              res.error,
+            );
           break;
         }
         case "submit_color": {
@@ -155,7 +195,12 @@ export function registerWebSocketRoute(
                 } as const)
               : ({ kind: "pass" } as const);
           const res = boundTable.submitColor(boundPlayerId, action);
-          if (!res.ok) boundTable.sendError(boundPlayerId, "submit_color_failed", res.error);
+          if (!res.ok)
+            boundTable.sendError(
+              boundPlayerId,
+              "submit_color_failed",
+              res.error,
+            );
           break;
         }
         case "leave_table": {
@@ -169,19 +214,22 @@ export function registerWebSocketRoute(
         case "end_game": {
           if (!boundTable || !boundPlayerId) return unbound();
           const res = boundTable.endGame(boundPlayerId);
-          if (!res.ok) boundTable.sendError(boundPlayerId, "end_game_failed", res.error);
+          if (!res.ok)
+            boundTable.sendError(boundPlayerId, "end_game_failed", res.error);
           break;
         }
         case "add_bot": {
           if (!boundTable || !boundPlayerId) return unbound();
           const res = boundTable.addBotSeat(boundPlayerId, msg.difficulty);
-          if (!res.ok) boundTable.sendError(boundPlayerId, "add_bot_failed", res.error);
+          if (!res.ok)
+            boundTable.sendError(boundPlayerId, "add_bot_failed", res.error);
           break;
         }
         case "remove_bot": {
           if (!boundTable || !boundPlayerId) return unbound();
           const res = boundTable.removeBotSeat(boundPlayerId, msg.playerId);
-          if (!res.ok) boundTable.sendError(boundPlayerId, "remove_bot_failed", res.error);
+          if (!res.ok)
+            boundTable.sendError(boundPlayerId, "remove_bot_failed", res.error);
           break;
         }
       }
@@ -198,7 +246,8 @@ export function registerWebSocketRoute(
     });
 
     ws.on("close", () => {
-      if (boundTable && boundPlayerId) boundTable.detachConnection(boundPlayerId);
+      if (boundTable && boundPlayerId)
+        boundTable.detachConnection(boundPlayerId);
     });
   });
 }

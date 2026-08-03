@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { tryCreateSqliteStore } from "../src/store/sqlite.js";
 import { startTestServer } from "./testServer.js";
 import { TestClient } from "./testClient.js";
+import type { SnapshotMessage } from "../src/protocol.js";
 
 describe("CPU bots", () => {
   let close: (() => Promise<void>) | null = null;
@@ -24,7 +25,11 @@ describe("CPU bots", () => {
     const aliceJoined = await alice.waitForType("joined");
 
     const bob = await TestClient.connect(server.url);
-    bob.send({ type: "join_table", roomCode: aliceJoined.roomCode, nickname: "Bob" });
+    bob.send({
+      type: "join_table",
+      roomCode: aliceJoined.roomCode,
+      nickname: "Bob",
+    });
     await bob.waitForType("joined");
     await alice.waitForSnapshot((s) => s.sheets.length === 2);
 
@@ -35,18 +40,20 @@ describe("CPU bots", () => {
 
     alice.send({ type: "add_bot", difficulty: "easy" });
     const withBot = await alice.waitForSnapshot((s) => s.sheets.length === 3);
-    const botSeat = withBot.sheets.find((s: any) => s.isBot);
+    const botSeat = withBot.sheets.find((s) => s.isBot);
     expect(botSeat).toBeTruthy();
-    expect(botSeat.nickname).toBe("CPU 1 (Easy)");
-    expect(botSeat.connected).toBe(true);
+    expect(botSeat!.nickname).toBe("CPU 1 (Easy)");
+    expect(botSeat!.connected).toBe(true);
 
-    bob.send({ type: "remove_bot", playerId: botSeat.playerId });
+    bob.send({ type: "remove_bot", playerId: botSeat!.playerId });
     const removeErr = await bob.waitForType("error");
     expect(removeErr.code).toBe("remove_bot_failed");
 
-    alice.send({ type: "remove_bot", playerId: botSeat.playerId });
-    const withoutBot = await alice.waitForSnapshot((s) => s.sheets.length === 2);
-    expect(withoutBot.sheets.some((s: any) => s.isBot)).toBe(false);
+    alice.send({ type: "remove_bot", playerId: botSeat!.playerId });
+    const withoutBot = await alice.waitForSnapshot(
+      (s) => s.sheets.length === 2,
+    );
+    expect(withoutBot.sheets.some((s) => s.isBot)).toBe(false);
   });
 
   it("plays an entire single-player game (host + 1 bot) to completion without any action from the bot's own client", async () => {
@@ -59,17 +66,23 @@ describe("CPU bots", () => {
 
     alice.send({ type: "add_bot", difficulty: "easy" });
     const lobbySnap = await alice.waitForSnapshot((s) => s.sheets.length === 2);
-    const botPlayerId = lobbySnap.sheets.find((s: any) => s.isBot).playerId;
+    const botPlayerId = lobbySnap.sheets.find((s) => s.isBot)!.playerId;
 
     alice.send({ type: "start_game" });
     const firstWhite = await alice.waitForSnapshot((s) => s.phase === "WHITE");
 
-    const finalSnap = await runToFinish(alice, aliceJoined.playerId, firstWhite);
+    const finalSnap = await runToFinish(
+      alice,
+      aliceJoined.playerId,
+      firstWhite,
+    );
 
     expect(finalSnap.lobbyState).toBe("FINISHED");
     expect(finalSnap.phase).toBe("FINISHED");
     expect(finalSnap.results).toHaveLength(2);
-    expect(finalSnap.results.some((r: any) => r.playerId === botPlayerId)).toBe(true);
+    expect(finalSnap.results!.some((r) => r.playerId === botPlayerId)).toBe(
+      true,
+    );
   });
 
   it("plays an entire single-player game with a medium bot to completion", async () => {
@@ -82,16 +95,22 @@ describe("CPU bots", () => {
 
     alice.send({ type: "add_bot", difficulty: "medium" });
     const lobbySnap = await alice.waitForSnapshot((s) => s.sheets.length === 2);
-    const botSeat = lobbySnap.sheets.find((s: any) => s.isBot);
-    expect(botSeat.nickname).toBe("CPU 1 (Medium)");
+    const botSeat = lobbySnap.sheets.find((s) => s.isBot);
+    expect(botSeat!.nickname).toBe("CPU 1 (Medium)");
 
     alice.send({ type: "start_game" });
     const firstWhite = await alice.waitForSnapshot((s) => s.phase === "WHITE");
 
-    const finalSnap = await runToFinish(alice, aliceJoined.playerId, firstWhite);
+    const finalSnap = await runToFinish(
+      alice,
+      aliceJoined.playerId,
+      firstWhite,
+    );
 
     expect(finalSnap.lobbyState).toBe("FINISHED");
-    expect(finalSnap.results.some((r: any) => r.playerId === botSeat.playerId)).toBe(true);
+    expect(
+      finalSnap.results!.some((r) => r.playerId === botSeat!.playerId),
+    ).toBe(true);
   });
 
   it("plays an entire single-player game with a hard bot to completion, including voluntary passes", async () => {
@@ -104,16 +123,22 @@ describe("CPU bots", () => {
 
     alice.send({ type: "add_bot", difficulty: "hard" });
     const lobbySnap = await alice.waitForSnapshot((s) => s.sheets.length === 2);
-    const botSeat = lobbySnap.sheets.find((s: any) => s.isBot);
-    expect(botSeat.nickname).toBe("CPU 1 (Hard)");
+    const botSeat = lobbySnap.sheets.find((s) => s.isBot);
+    expect(botSeat!.nickname).toBe("CPU 1 (Hard)");
 
     alice.send({ type: "start_game" });
     const firstWhite = await alice.waitForSnapshot((s) => s.phase === "WHITE");
 
-    const finalSnap = await runToFinish(alice, aliceJoined.playerId, firstWhite);
+    const finalSnap = await runToFinish(
+      alice,
+      aliceJoined.playerId,
+      firstWhite,
+    );
 
     expect(finalSnap.lobbyState).toBe("FINISHED");
-    expect(finalSnap.results.some((r: any) => r.playerId === botSeat.playerId)).toBe(true);
+    expect(
+      finalSnap.results!.some((r) => r.playerId === botSeat!.playerId),
+    ).toBe(true);
   });
 
   it("lets a bot answer the WHITE phase on its own without blocking on the human, and still waits for the human", async () => {
@@ -125,7 +150,7 @@ describe("CPU bots", () => {
     const aliceJoined = await alice.waitForType("joined");
     alice.send({ type: "add_bot", difficulty: "easy" });
     const lobbySnap = await alice.waitForSnapshot((s) => s.sheets.length === 2);
-    const botPlayerId = lobbySnap.sheets.find((s: any) => s.isBot).playerId;
+    const botPlayerId = lobbySnap.sheets.find((s) => s.isBot)!.playerId;
 
     alice.send({ type: "start_game" });
     const whiteSnap = await alice.waitForSnapshot((s) => s.phase === "WHITE");
@@ -164,18 +189,26 @@ describe("CPU bots", () => {
       const store1 = await tryCreateSqliteStore(dbPath);
       expect(store1).not.toBeNull();
 
-      const server1 = await startTestServer({ seed: 5, store: store1!, botRandom: () => 0 });
+      const server1 = await startTestServer({
+        seed: 5,
+        store: store1!,
+        botRandom: () => 0,
+      });
       close = server1.close;
 
       const alice = await TestClient.connect(server1.url);
       alice.send({ type: "create_table", nickname: "Alice" });
       const aliceJoined = await alice.waitForType("joined");
       alice.send({ type: "add_bot", difficulty: "easy" });
-      const lobbySnap = await alice.waitForSnapshot((s) => s.sheets.length === 2);
-      const botPlayerId = lobbySnap.sheets.find((s: any) => s.isBot).playerId;
+      const lobbySnap = await alice.waitForSnapshot(
+        (s) => s.sheets.length === 2,
+      );
+      const botPlayerId = lobbySnap.sheets.find((s) => s.isBot)!.playerId;
 
       alice.send({ type: "start_game" });
-      const firstWhite = await alice.waitForSnapshot((s) => s.phase === "WHITE");
+      const firstWhite = await alice.waitForSnapshot(
+        (s) => s.phase === "WHITE",
+      );
 
       // Play turn 1 out completely so resolveAndContinue persists a
       // snapshot with turnSeq=1.
@@ -193,7 +226,11 @@ describe("CPU bots", () => {
       close = null;
 
       const store2 = await tryCreateSqliteStore(dbPath);
-      const server2 = await startTestServer({ seed: 999, store: store2!, botRandom: () => 0 });
+      const server2 = await startTestServer({
+        seed: 999,
+        store: store2!,
+        botRandom: () => 0,
+      });
       close = server2.close;
 
       const rejoined = await TestClient.connect(server2.url);
@@ -202,15 +239,23 @@ describe("CPU bots", () => {
       await rejoined.waitForType("joined");
 
       expect(restoredSnap.lobbyState).toBe("IN_PROGRESS");
-      const botSheet = restoredSnap.sheets.find((s: any) => s.playerId === botPlayerId);
-      expect(botSheet.isBot).toBe(true);
-      expect(botSheet.connected).toBe(true); // no socket ever attaches for a bot — must not be left "gone"
+      const botSheet = restoredSnap.sheets.find(
+        (s) => s.playerId === botPlayerId,
+      );
+      expect(botSheet!.isBot).toBe(true);
+      expect(botSheet!.connected).toBe(true); // no socket ever attaches for a bot — must not be left "gone"
 
       // The turn loop should keep progressing after the human reconnects,
       // proving the bot keeps participating (not just marked connected).
-      const whiteSnap3 = await rejoined.waitForSnapshot((s) => s.phase === "WHITE", 5000);
+      const whiteSnap3 = await rejoined.waitForSnapshot(
+        (s) => s.phase === "WHITE",
+        5000,
+      );
       await playOneTurn(rejoined, aliceJoined.playerId, whiteSnap3);
-      const whiteSnap4 = await rejoined.waitForSnapshot((s) => s.phase === "WHITE", 5000);
+      const whiteSnap4 = await rejoined.waitForSnapshot(
+        (s) => s.phase === "WHITE",
+        5000,
+      );
       expect(whiteSnap4.turnSeq).toBeGreaterThan(whiteSnap3.turnSeq);
     });
   });
@@ -227,16 +272,22 @@ describe("CPU bots", () => {
  * NEXT turn's WHITE (turnSeq advanced), or FINISHED" as a defensive
  * fallback rather than assuming COLOR always shows up.
  */
-async function playOneTurn(alice: TestClient, alicePlayerId: string, whiteSnap: any): Promise<any> {
+async function playOneTurn(
+  alice: TestClient,
+  alicePlayerId: string,
+  whiteSnap: SnapshotMessage,
+): Promise<SnapshotMessage> {
   if (whiteSnap.phase === "FINISHED") return whiteSnap;
   const turnSeq = whiteSnap.turnSeq;
   alice.send({ type: "submit_white", action: { kind: "pass" } });
 
-  const next = await alice.waitFor(
+  const next = (await alice.waitFor(
     (m) =>
       m.type === "snapshot" &&
-      (m.phase === "FINISHED" || m.phase === "COLOR" || (m.phase === "WHITE" && m.turnSeq > turnSeq)),
-  );
+      (m.phase === "FINISHED" ||
+        m.phase === "COLOR" ||
+        (m.phase === "WHITE" && m.turnSeq > turnSeq)),
+  )) as SnapshotMessage;
   if (next.phase !== "COLOR") return next; // FINISHED, or COLOR had nothing to do and was skipped entirely
 
   if (next.activePlayerId === alicePlayerId) {
@@ -244,7 +295,10 @@ async function playOneTurn(alice: TestClient, alicePlayerId: string, whiteSnap: 
   }
   // Otherwise the bot is active and resolves color on its own.
 
-  return alice.waitFor((m) => m.type === "snapshot" && (m.phase === "WHITE" || m.phase === "FINISHED"));
+  return (await alice.waitFor(
+    (m) =>
+      m.type === "snapshot" && (m.phase === "WHITE" || m.phase === "FINISHED"),
+  )) as SnapshotMessage;
 }
 
 /**
@@ -253,7 +307,11 @@ async function playOneTurn(alice: TestClient, alicePlayerId: string, whiteSnap: 
  * bot seat — proving the bot scheduling logic alone is enough to reach
  * FINISHED.
  */
-async function runToFinish(alice: TestClient, alicePlayerId: string, firstWhiteSnapshot: any): Promise<any> {
+async function runToFinish(
+  alice: TestClient,
+  alicePlayerId: string,
+  firstWhiteSnapshot: SnapshotMessage,
+): Promise<SnapshotMessage> {
   let whiteSnap = firstWhiteSnapshot;
   for (let turn = 0; turn < 80; turn++) {
     if (whiteSnap.phase === "FINISHED") return whiteSnap;

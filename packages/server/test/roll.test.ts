@@ -2,13 +2,19 @@ import { afterEach, describe, expect, it } from "vitest";
 import { startTestServer } from "./testServer.js";
 import { TestClient } from "./testClient.js";
 
-async function setUpTwoPlayerGame(server: Awaited<ReturnType<typeof startTestServer>>) {
+async function setUpTwoPlayerGame(
+  server: Awaited<ReturnType<typeof startTestServer>>,
+) {
   const alice = await TestClient.connect(server.url);
   alice.send({ type: "create_table", nickname: "Alice" });
   const aliceJoined = await alice.waitForType("joined");
 
   const bob = await TestClient.connect(server.url);
-  bob.send({ type: "join_table", roomCode: aliceJoined.roomCode, nickname: "Bob" });
+  bob.send({
+    type: "join_table",
+    roomCode: aliceJoined.roomCode,
+    nickname: "Bob",
+  });
   const bobJoined = await bob.waitForType("joined");
 
   await alice.waitForSnapshot((s) => s.sheets.length === 2);
@@ -29,14 +35,19 @@ describe("ROLLING phase", () => {
     const server = await startTestServer({ seed: 1, rollPhaseMs: 60_000 });
     close = server.close;
 
-    const { alice, bob, aliceJoined, rollingSnap } = await setUpTwoPlayerGame(server);
+    const { alice, bob, aliceJoined, rollingSnap } =
+      await setUpTwoPlayerGame(server);
     expect(rollingSnap.roll).toBeNull();
     expect(rollingSnap.phaseDeadline).not.toBeNull();
 
-    const active = rollingSnap.activePlayerId === aliceJoined.playerId ? alice : bob;
+    const active =
+      rollingSnap.activePlayerId === aliceJoined.playerId ? alice : bob;
     active.send({ type: "roll_dice" });
 
-    const whiteSnap = await alice.waitForSnapshot((s) => s.phase === "WHITE", 3000);
+    const whiteSnap = await alice.waitForSnapshot(
+      (s) => s.phase === "WHITE",
+      3000,
+    );
     expect(whiteSnap.roll).not.toBeNull();
     expect(whiteSnap.turnSeq).toBe(rollingSnap.turnSeq);
   });
@@ -45,8 +56,10 @@ describe("ROLLING phase", () => {
     const server = await startTestServer({ seed: 2, rollPhaseMs: 60_000 });
     close = server.close;
 
-    const { alice, bob, aliceJoined, rollingSnap } = await setUpTwoPlayerGame(server);
-    const passive = rollingSnap.activePlayerId === aliceJoined.playerId ? bob : alice;
+    const { alice, bob, aliceJoined, rollingSnap } =
+      await setUpTwoPlayerGame(server);
+    const passive =
+      rollingSnap.activePlayerId === aliceJoined.playerId ? bob : alice;
 
     passive.send({ type: "roll_dice" });
     const err = await passive.waitForType("error");
@@ -54,7 +67,9 @@ describe("ROLLING phase", () => {
     expect(err.message).toMatch(/active player/i);
 
     // Nothing should have rolled — still waiting.
-    const stillRolling = await alice.waitFor((m) => m.type === "snapshot" && m.phase === "ROLLING", 500).catch(() => null);
+    const stillRolling = await alice
+      .waitFor((m) => m.type === "snapshot" && m.phase === "ROLLING", 500)
+      .catch(() => null);
     // Either we observe another ROLLING snapshot, or none arrives because
     // nothing changed — both are fine; what matters is no WHITE snapshot
     // appeared as a result of the rejected roll.
@@ -68,7 +83,10 @@ describe("ROLLING phase", () => {
     const { alice, rollingSnap } = await setUpTwoPlayerGame(server);
     expect(rollingSnap.roll).toBeNull();
 
-    const whiteSnap = await alice.waitForSnapshot((s) => s.phase === "WHITE", 3000);
+    const whiteSnap = await alice.waitForSnapshot(
+      (s) => s.phase === "WHITE",
+      3000,
+    );
     expect(whiteSnap.roll).not.toBeNull();
     expect(whiteSnap.turnSeq).toBe(rollingSnap.turnSeq);
     // Auto-rolling isn't a missed turn — nobody should be penalized just for this.
@@ -79,14 +97,18 @@ describe("ROLLING phase", () => {
     const server = await startTestServer({ seed: 4, rollPhaseMs: 60_000 });
     close = server.close;
 
-    const { alice, bob, aliceJoined, rollingSnap } = await setUpTwoPlayerGame(server);
+    const { alice, bob, aliceJoined, rollingSnap } =
+      await setUpTwoPlayerGame(server);
     const activeIsAlice = rollingSnap.activePlayerId === aliceJoined.playerId;
     const goneClient = activeIsAlice ? alice : bob;
     const stayingClient = activeIsAlice ? bob : alice;
 
     goneClient.close();
 
-    const whiteSnap = await stayingClient.waitForSnapshot((s) => s.phase === "WHITE", 3000);
+    const whiteSnap = await stayingClient.waitForSnapshot(
+      (s) => s.phase === "WHITE",
+      3000,
+    );
     expect(whiteSnap.roll).not.toBeNull();
     expect(whiteSnap.turnSeq).toBe(rollingSnap.turnSeq);
   });

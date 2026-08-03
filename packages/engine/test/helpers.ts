@@ -5,7 +5,11 @@ import { applyCross } from "../src/apply.js";
 /** Builds a sheet and cross a sequence of values in a row via the real applyCross,
  * so preconditions (e.g. "5 crosses already in red") are only ever built through
  * legal moves — never by poking crossedIndices directly. */
-export function sheetWithCrosses(playerId: string, color: Color, values: number[]): PlayerSheet {
+export function sheetWithCrosses(
+  playerId: string,
+  color: Color,
+  values: number[],
+): PlayerSheet {
   const sheet = emptySheet(playerId);
   const fakeState = {
     seatOrder: [playerId],

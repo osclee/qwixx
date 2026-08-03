@@ -20,7 +20,10 @@ export class RateLimiter {
 
   tryConsume(now = Date.now()): boolean {
     const elapsedSeconds = Math.max(0, now - this.lastRefill) / 1000;
-    this.tokens = Math.min(this.opts.capacity, this.tokens + elapsedSeconds * this.opts.refillPerSecond);
+    this.tokens = Math.min(
+      this.opts.capacity,
+      this.tokens + elapsedSeconds * this.opts.refillPerSecond,
+    );
     this.lastRefill = now;
 
     if (this.tokens < 1) return false;

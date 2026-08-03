@@ -9,14 +9,26 @@ interface ScoreSheetProps {
   onCellClick?: (color: Color, value: number) => void;
 }
 
-export function ScoreSheet({ sheet, compact, legalValues, onCellClick }: ScoreSheetProps) {
+export function ScoreSheet({
+  sheet,
+  compact,
+  legalValues,
+  onCellClick,
+}: ScoreSheetProps) {
   return (
     <div className={`score-sheet ${compact ? "score-sheet--compact" : ""}`}>
       <div className="score-sheet__header">
-        <span className={`nickname ${sheet.connected ? "" : "nickname--offline"}`}>
+        <span
+          className={`nickname ${sheet.connected ? "" : "nickname--offline"}`}
+        >
           {sheet.nickname}
           {sheet.isBot && <span className="badge">CPU</span>}
-          {!sheet.connected && <span className="offline-dot" title="Disconnected"> ● </span>}
+          {!sheet.connected && (
+            <span className="offline-dot" title="Disconnected">
+              {" "}
+              ●{" "}
+            </span>
+          )}
         </span>
       </div>
       {ROW_ORDER.map((color) => {
@@ -51,7 +63,10 @@ export function ScoreSheet({ sheet, compact, legalValues, onCellClick }: ScoreSh
                   </button>
                 );
               })}
-              <span className={`lock ${row.locked ? "lock--earned" : ""}`} title="Lock">
+              <span
+                className={`lock ${row.locked ? "lock--earned" : ""}`}
+                title="Lock"
+              >
                 🔒
               </span>
             </div>
@@ -62,7 +77,10 @@ export function ScoreSheet({ sheet, compact, legalValues, onCellClick }: ScoreSh
       <div className="penalties">
         <span className="penalties__label">Penalties</span>
         {[0, 1, 2, 3].map((i) => (
-          <span key={i} className={`penalty-box ${i < sheet.penalties ? "penalty-box--crossed" : ""}`} />
+          <span
+            key={i}
+            className={`penalty-box ${i < sheet.penalties ? "penalty-box--crossed" : ""}`}
+          />
         ))}
       </div>
     </div>

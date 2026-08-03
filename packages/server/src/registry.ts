@@ -34,7 +34,10 @@ export class TableRegistry {
     for (let attempt = 0; attempt < 50; attempt++) {
       let code = "";
       for (let i = 0; i < ROOM_CODE_LENGTH; i++) {
-        code += ROOM_CODE_ALPHABET[Math.floor(Math.random() * ROOM_CODE_ALPHABET.length)];
+        code +=
+          ROOM_CODE_ALPHABET[
+            Math.floor(Math.random() * ROOM_CODE_ALPHABET.length)
+          ];
       }
       if (!this.tables.has(code)) return code;
     }
@@ -45,7 +48,11 @@ export class TableRegistry {
     return this.tables.get(roomCode.toUpperCase());
   }
 
-  createTable(nickname: string): { table: Table; sessionToken: string; playerId: string } {
+  createTable(nickname: string): {
+    table: Table;
+    sessionToken: string;
+    playerId: string;
+  } {
     const roomCode = this.newRoomCode();
     const table = new Table(roomCode, {
       store: this.deps.store,
@@ -65,7 +72,9 @@ export class TableRegistry {
   joinTable(
     roomCode: string,
     nickname: string,
-  ): { ok: true; table: Table; sessionToken: string; playerId: string } | { ok: false; error: string } {
+  ):
+    | { ok: true; table: Table; sessionToken: string; playerId: string }
+    | { ok: false; error: string } {
     const table = this.getTable(roomCode);
     if (!table) return { ok: false, error: "No table with that room code" };
     const playerId = randomUUID();
@@ -73,7 +82,10 @@ export class TableRegistry {
     if (!table.addSeat(playerId, nickname, sessionToken)) {
       return {
         ok: false,
-        error: table.lobbyState !== "LOBBY" ? "Game already in progress" : "Table is full",
+        error:
+          table.lobbyState !== "LOBBY"
+            ? "Game already in progress"
+            : "Table is full",
       };
     }
     this.sessions.set(sessionToken, { roomCode, playerId });
@@ -81,7 +93,11 @@ export class TableRegistry {
     return { ok: true, table, sessionToken, playerId };
   }
 
-  rejoin(sessionToken: string): { ok: true; table: Table; playerId: string; roomCode: string } | { ok: false; error: string } {
+  rejoin(
+    sessionToken: string,
+  ):
+    | { ok: true; table: Table; playerId: string; roomCode: string }
+    | { ok: false; error: string } {
     const session = this.sessions.get(sessionToken);
     if (!session) return { ok: false, error: "Unknown or expired session" };
     const table = this.getTable(session.roomCode);
@@ -89,7 +105,12 @@ export class TableRegistry {
       return { ok: false, error: "That table no longer exists" };
     }
     this.scheduleIdleReap(session.roomCode);
-    return { ok: true, table, playerId: session.playerId, roomCode: session.roomCode };
+    return {
+      ok: true,
+      table,
+      playerId: session.playerId,
+      roomCode: session.roomCode,
+    };
   }
 
   /**
@@ -108,7 +129,10 @@ export class TableRegistry {
       });
       this.tables.set(stored.roomCode, table);
       for (const { playerId, sessionToken } of table.listSessions()) {
-        this.sessions.set(sessionToken, { roomCode: stored.roomCode, playerId });
+        this.sessions.set(sessionToken, {
+          roomCode: stored.roomCode,
+          playerId,
+        });
       }
       this.scheduleIdleReap(stored.roomCode);
     }
@@ -117,7 +141,10 @@ export class TableRegistry {
   private scheduleIdleReap(roomCode: string): void {
     const existing = this.idleTimers.get(roomCode);
     if (existing) clearTimeout(existing);
-    const timer = setTimeout(() => this.destroyTable(roomCode), IDLE_LOBBY_TTL_MS);
+    const timer = setTimeout(
+      () => this.destroyTable(roomCode),
+      IDLE_LOBBY_TTL_MS,
+    );
     timer.unref?.();
     this.idleTimers.set(roomCode, timer);
   }

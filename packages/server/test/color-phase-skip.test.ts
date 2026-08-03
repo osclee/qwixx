@@ -35,12 +35,28 @@ describe("COLOR phase with no legal move", () => {
       roomCode,
       hostPlayerId: aliceId,
       seats: [
-        { playerId: aliceId, nickname: "Alice", sessionToken: aliceToken, isBot: false, botDifficulty: null },
-        { playerId: bobId, nickname: "Bob", sessionToken: bobToken, isBot: false, botDifficulty: null },
+        {
+          playerId: aliceId,
+          nickname: "Alice",
+          sessionToken: aliceToken,
+          isBot: false,
+          botDifficulty: null,
+        },
+        {
+          playerId: bobId,
+          nickname: "Bob",
+          sessionToken: bobToken,
+          isBot: false,
+          botDifficulty: null,
+        },
       ],
       createdAt: Date.now(),
     });
-    store.saveSnapshot(roomCode, state.turnSeq, JSON.stringify(serializeGameState(state)));
+    store.saveSnapshot(
+      roomCode,
+      state.turnSeq,
+      JSON.stringify(serializeGameState(state)),
+    );
 
     // Restored tables stay paused until the first reconnect (see Table.restore).
     const server = await startTestServer({ seed: 5, store });
@@ -63,10 +79,12 @@ describe("COLOR phase with no legal move", () => {
     // all four colors this turn and the game ends immediately (2+ colors
     // removed) — confirming the turn actually progressed past COLOR rather
     // than getting stuck, and that alice took the expected no-cross penalty.
-    const finalSnap = await alice.waitForSnapshot((s) => s.phase === "FINISHED");
+    const finalSnap = await alice.waitForSnapshot(
+      (s) => s.phase === "FINISHED",
+    );
     expect(finalSnap.lobbyState).toBe("FINISHED");
-    const aliceSheet = finalSnap.sheets.find((s: any) => s.playerId === aliceId);
-    expect(aliceSheet.penalties).toBe(1);
-    expect(finalSnap.results.some((r: any) => r.playerId === aliceId)).toBe(true);
+    const aliceSheet = finalSnap.sheets.find((s) => s.playerId === aliceId);
+    expect(aliceSheet!.penalties).toBe(1);
+    expect(finalSnap.results!.some((r) => r.playerId === aliceId)).toBe(true);
   });
 });

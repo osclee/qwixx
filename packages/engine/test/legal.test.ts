@@ -59,7 +59,12 @@ describe("legalWhiteMoves", () => {
     const sheet = emptySheet("p1");
     const moves = legalWhiteMoves(sheet, 7);
     expect(moves).toHaveLength(4);
-    expect(moves.map((m) => m.color).sort()).toEqual(["blue", "green", "red", "yellow"]);
+    expect(moves.map((m) => m.color).sort()).toEqual([
+      "blue",
+      "green",
+      "red",
+      "yellow",
+    ]);
   });
 
   it("excludes locked rows and rows where the value is left of last-crossed", () => {

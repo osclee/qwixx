@@ -13,11 +13,21 @@
     "dev:server": "npm run dev -w @quixx/server",
     "dev:client": "npm run dev -w @quixx/client",
     "dev": "npm-run-all --parallel dev:server dev:client",
-    "typecheck": "npm run typecheck -ws --if-present"
+    "typecheck": "npm run typecheck -ws --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "globals": "^15.15.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.9.6",
     "typescript": "^5.6.3",
-    "npm-run-all": "^4.1.5"
+    "typescript-eslint": "^8.65.0"
   },
   "engines": {
     "node": ">=20"

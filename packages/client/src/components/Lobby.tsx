@@ -1,7 +1,11 @@
 import { useState } from "react";
 import type { ConnectionStatus, GameConnection } from "../net/socket";
 import type { ErrorMessage } from "../net/protocol";
-import { getStoredNickname, getStoredSessionToken, setStoredNickname } from "../net/session";
+import {
+  getStoredNickname,
+  getStoredSessionToken,
+  setStoredNickname,
+} from "../net/session";
 
 interface LobbyProps {
   conn: GameConnection;
@@ -16,7 +20,10 @@ export function Lobby({ conn, status, error }: LobbyProps) {
 
   const connected = status === "open";
   const trimmedNickname = nickname.trim();
-  const canSubmit = connected && trimmedNickname.length > 0 && (mode === "create" || roomCode.trim().length >= 4);
+  const canSubmit =
+    connected &&
+    trimmedNickname.length > 0 &&
+    (mode === "create" || roomCode.trim().length >= 4);
   const canRejoin = connected && getStoredSessionToken() !== null;
 
   function submit(e: React.FormEvent) {
@@ -44,7 +51,11 @@ export function Lobby({ conn, status, error }: LobbyProps) {
         </p>
 
         {canRejoin && (
-          <button type="button" className="btn btn--primary lobby__rejoin" onClick={() => conn.rejoin()}>
+          <button
+            type="button"
+            className="btn btn--primary lobby__rejoin"
+            onClick={() => conn.rejoin()}
+          >
             Rejoin game
           </button>
         )}
@@ -88,7 +99,11 @@ export function Lobby({ conn, status, error }: LobbyProps) {
               />
             </label>
           )}
-          <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
+          <button
+            type="submit"
+            className="btn btn--primary"
+            disabled={!canSubmit}
+          >
             {mode === "create" ? "Create table" : "Join table"}
           </button>
         </form>

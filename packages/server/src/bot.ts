@@ -171,7 +171,13 @@ function rankHardWhite<T extends { color: Color; value: number }>(
   sheet: PlayerSheet,
   random: () => number,
 ): T | null {
-  return rankHard(moves, sheet, twoDiceSumProb, REMAINING_TURNS_ESTIMATE, random);
+  return rankHard(
+    moves,
+    sheet,
+    twoDiceSumProb,
+    REMAINING_TURNS_ESTIMATE,
+    random,
+  );
 }
 
 function rankHardColor<T extends { color: Color; value: number }>(
@@ -180,8 +186,17 @@ function rankHardColor<T extends { color: Color; value: number }>(
   seatCount: number,
   random: () => number,
 ): T | null {
-  const remainingChances = Math.max(1, Math.round(REMAINING_TURNS_ESTIMATE / seatCount));
-  return rankHard(moves, sheet, (v) => COLOR_HIT_PROB[v] ?? 0, remainingChances, random);
+  const remainingChances = Math.max(
+    1,
+    Math.round(REMAINING_TURNS_ESTIMATE / seatCount),
+  );
+  return rankHard(
+    moves,
+    sheet,
+    (v) => COLOR_HIT_PROB[v] ?? 0,
+    remainingChances,
+    random,
+  );
 }
 
 /** Picks a bot's WHITE-phase move, or null if none is legal or (hard only) worth taking. */
@@ -209,7 +224,8 @@ export function chooseColorMove(
 ): LegalColorMove | null {
   const moves = legalColorMoves(sheet, roll, diceInPlay);
   if (moves.length === 0) return null;
-  if (difficulty === "hard") return rankHardColor(moves, sheet, seatCount, random);
+  if (difficulty === "hard")
+    return rankHardColor(moves, sheet, seatCount, random);
   if (difficulty === "medium") return rankMedium(moves, sheet, random);
   return pickUniform(moves, random);
 }

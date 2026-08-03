@@ -10,12 +10,23 @@ interface GameOverProps {
 
 const RANK_MEDAL: Record<number, string> = { 1: "🏆", 2: "🥈", 3: "🥉" };
 
-export function GameOver({ results, you, isHost, onClose, onNewGame }: GameOverProps) {
+export function GameOver({
+  results,
+  you,
+  isHost,
+  onClose,
+  onNewGame,
+}: GameOverProps) {
   const sorted = [...results].sort((a, b) => a.rank - b.rank);
   return (
     <div className="game-over" onClick={onClose}>
       <div className="game-over__card" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="game-over__close" onClick={onClose} aria-label="Close">
+        <button
+          type="button"
+          className="game-over__close"
+          onClick={onClose}
+          aria-label="Close"
+        >
           ✕
         </button>
         <h2 className="game-over__title">
@@ -39,7 +50,10 @@ export function GameOver({ results, you, isHost, onClose, onNewGame }: GameOverP
               {sorted.map((r) => (
                 <tr
                   key={r.playerId}
-                  className={[r.playerId === you ? "game-over__you" : "", r.rank === 1 ? "game-over__winner" : ""]
+                  className={[
+                    r.playerId === you ? "game-over__you" : "",
+                    r.rank === 1 ? "game-over__winner" : "",
+                  ]
                     .filter(Boolean)
                     .join(" ")}
                 >
@@ -61,11 +75,17 @@ export function GameOver({ results, you, isHost, onClose, onNewGame }: GameOverP
           </table>
         </div>
         {isHost ? (
-          <button type="button" className="btn btn--primary game-over__rematch" onClick={onNewGame}>
+          <button
+            type="button"
+            className="btn btn--primary game-over__rematch"
+            onClick={onNewGame}
+          >
             Play again
           </button>
         ) : (
-          <p className="game-over__waiting">Waiting for the host to start a new game…</p>
+          <p className="game-over__waiting">
+            Waiting for the host to start a new game…
+          </p>
         )}
       </div>
     </div>

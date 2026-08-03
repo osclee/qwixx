@@ -20,10 +20,14 @@ import {
  */
 describe("client/server protocol sync", () => {
   it("agree on client -> server message types", () => {
-    expect([...clientClientTypes].sort()).toEqual([...serverClientTypes].sort());
+    expect([...clientClientTypes].sort()).toEqual(
+      [...serverClientTypes].sort(),
+    );
   });
 
   it("agree on server -> client message types", () => {
-    expect([...clientServerTypes].sort()).toEqual([...serverServerTypes].sort());
+    expect([...clientServerTypes].sort()).toEqual(
+      [...serverServerTypes].sort(),
+    );
   });
 });

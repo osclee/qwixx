@@ -7,7 +7,10 @@ import type { Color, DiceRoll } from "./types.js";
  */
 export type Die = () => number;
 
-export function rollDice(diceInPlay: ReadonlySet<Color>, rollOne: Die): DiceRoll {
+export function rollDice(
+  diceInPlay: ReadonlySet<Color>,
+  rollOne: Die,
+): DiceRoll {
   const roll: DiceRoll = { w1: rollOne(), w2: rollOne() };
   for (const color of ["red", "yellow", "green", "blue"] as const) {
     if (diceInPlay.has(color)) {
@@ -29,7 +32,9 @@ export async function cryptoDie(): Promise<number> {
 }
 
 /** Synchronous variant for callers (the server) that can top-level-await or pre-resolve the import. */
-export function makeCryptoDie(nodeCrypto: { randomInt(min: number, max: number): number }): Die {
+export function makeCryptoDie(nodeCrypto: {
+  randomInt(min: number, max: number): number;
+}): Die {
   return () => nodeCrypto.randomInt(1, 7);
 }
 

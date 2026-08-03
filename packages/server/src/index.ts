@@ -3,15 +3,23 @@ import path from "node:path";
 import { buildApp } from "./app.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
-const DB_PATH = process.env.QUIXX_DB_PATH ?? path.join(process.cwd(), "quixx.sqlite");
+const DB_PATH =
+  process.env.QUIXX_DB_PATH ?? path.join(process.cwd(), "quixx.sqlite");
 // Azure App Service / Container Apps set WEBSITES_PORT or PORT; QUIXX_DB_PATH
 // should point at a persistent mount there (local disk is ephemeral across
 // restarts/scale events) — see README "Deploying to Azure".
 const CLIENT_DIST =
-  process.env.QUIXX_CLIENT_DIST ?? path.resolve(fileURLToPath(import.meta.url), "../../../client/dist");
-const ROLL_PHASE_MS = process.env.QUIXX_ROLL_PHASE_MS ? Number(process.env.QUIXX_ROLL_PHASE_MS) : undefined;
-const WHITE_PHASE_MS = process.env.QUIXX_WHITE_PHASE_MS ? Number(process.env.QUIXX_WHITE_PHASE_MS) : undefined;
-const COLOR_PHASE_MS = process.env.QUIXX_COLOR_PHASE_MS ? Number(process.env.QUIXX_COLOR_PHASE_MS) : undefined;
+  process.env.QUIXX_CLIENT_DIST ??
+  path.resolve(fileURLToPath(import.meta.url), "../../../client/dist");
+const ROLL_PHASE_MS = process.env.QUIXX_ROLL_PHASE_MS
+  ? Number(process.env.QUIXX_ROLL_PHASE_MS)
+  : undefined;
+const WHITE_PHASE_MS = process.env.QUIXX_WHITE_PHASE_MS
+  ? Number(process.env.QUIXX_WHITE_PHASE_MS)
+  : undefined;
+const COLOR_PHASE_MS = process.env.QUIXX_COLOR_PHASE_MS
+  ? Number(process.env.QUIXX_COLOR_PHASE_MS)
+  : undefined;
 
 async function main() {
   const { app, store } = await buildApp({
@@ -37,7 +45,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  // eslint-disable-next-line no-console
   console.error(err);
   process.exit(1);
 });

@@ -31,7 +31,12 @@ export function WaitingRoom({ conn, snapshot, you }: WaitingRoomProps) {
           <span aria-hidden="true">🎲</span> Qwixx
         </h1>
         <p className="waiting-room__room-code-label">Room code</p>
-        <button type="button" className="waiting-room__room-code" onClick={copyCode} title="Click to copy">
+        <button
+          type="button"
+          className="waiting-room__room-code"
+          onClick={copyCode}
+          title="Click to copy"
+        >
           {snapshot.roomCode}
           {copied && <span className="waiting-room__copied"> copied!</span>}
         </button>
@@ -41,8 +46,12 @@ export function WaitingRoom({ conn, snapshot, you }: WaitingRoomProps) {
             <li key={s.playerId}>
               {s.nickname}
               {s.isBot && <span className="badge">CPU</span>}
-              {s.playerId === snapshot.hostPlayerId && <span className="badge">host</span>}
-              {s.playerId === you && <span className="badge badge--you">you</span>}
+              {s.playerId === snapshot.hostPlayerId && (
+                <span className="badge">host</span>
+              )}
+              {s.playerId === you && (
+                <span className="badge badge--you">you</span>
+              )}
               {isHost && s.isBot && (
                 <button
                   type="button"
@@ -80,13 +89,24 @@ export function WaitingRoom({ conn, snapshot, you }: WaitingRoomProps) {
         )}
 
         {isHost ? (
-          <button type="button" className="btn btn--primary" disabled={!canStart} onClick={() => conn.startGame()}>
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={!canStart}
+            onClick={() => conn.startGame()}
+          >
             {canStart ? "Start game" : "Need at least 2 players"}
           </button>
         ) : (
-          <p className="waiting-room__waiting">Waiting for the host to start…</p>
+          <p className="waiting-room__waiting">
+            Waiting for the host to start…
+          </p>
         )}
-        <button type="button" className="btn btn--ghost" onClick={() => conn.leaveTable()}>
+        <button
+          type="button"
+          className="btn btn--ghost"
+          onClick={() => conn.leaveTable()}
+        >
           Leave
         </button>
       </div>

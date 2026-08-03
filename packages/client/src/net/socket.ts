@@ -8,9 +8,14 @@ import type {
   SnapshotMessage,
   WhiteActionInput,
 } from "./protocol";
-import { clearStoredSessionToken, getStoredSessionToken, setStoredSessionToken } from "./session";
+import {
+  clearStoredSessionToken,
+  getStoredSessionToken,
+  setStoredSessionToken,
+} from "./session";
 
-export type ConnectionStatus = "connecting" | "open" | "reconnecting" | "closed";
+export type ConnectionStatus =
+  "connecting" | "open" | "reconnecting" | "closed";
 
 export interface ClientState {
   status: ConnectionStatus;
@@ -26,7 +31,14 @@ const RECONNECT_BASE_MS = 500;
 const RECONNECT_MAX_MS = 8000;
 
 function initialState(): ClientState {
-  return { status: "connecting", playerId: null, snapshot: null, events: [], lastError: null, errorSeq: 0 };
+  return {
+    status: "connecting",
+    playerId: null,
+    snapshot: null,
+    events: [],
+    lastError: null,
+    errorSeq: 0,
+  };
 }
 
 /**
@@ -67,7 +79,9 @@ export class GameConnection {
   private openSocket(): void {
     const ws = new WebSocket(this.url);
     this.ws = ws;
-    this.setState({ status: this.reconnectAttempts > 0 ? "reconnecting" : "connecting" });
+    this.setState({
+      status: this.reconnectAttempts > 0 ? "reconnecting" : "connecting",
+    });
 
     ws.addEventListener("open", () => {
       this.reconnectAttempts = 0;
@@ -105,7 +119,10 @@ export class GameConnection {
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer) return;
-    const delay = Math.min(RECONNECT_BASE_MS * 2 ** this.reconnectAttempts, RECONNECT_MAX_MS);
+    const delay = Math.min(
+      RECONNECT_BASE_MS * 2 ** this.reconnectAttempts,
+      RECONNECT_MAX_MS,
+    );
     this.reconnectAttempts += 1;
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
@@ -155,7 +172,11 @@ export class GameConnection {
   }
 
   joinTable(roomCode: string, nickname: string): void {
-    this.sendRaw({ type: "join_table", roomCode: roomCode.toUpperCase(), nickname });
+    this.sendRaw({
+      type: "join_table",
+      roomCode: roomCode.toUpperCase(),
+      nickname,
+    });
   }
 
   startGame(): void {

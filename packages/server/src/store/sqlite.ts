@@ -55,7 +55,9 @@ export class SqliteStore implements GameStore {
   saveSnapshot(roomCode: string, turnSeq: number, stateJson: string): void {
     if (this.closed) return;
     this.db
-      .prepare(`UPDATE tables SET state_json = ?, turn_seq = ? WHERE room_code = ?`)
+      .prepare(
+        `UPDATE tables SET state_json = ?, turn_seq = ? WHERE room_code = ?`,
+      )
       .run(stateJson, turnSeq, roomCode);
   }
 
@@ -87,7 +89,9 @@ export class SqliteStore implements GameStore {
   saveResults(roomCode: string, resultsJson: string): void {
     if (this.closed) return;
     this.db
-      .prepare(`UPDATE tables SET finished = 1, results_json = ? WHERE room_code = ?`)
+      .prepare(
+        `UPDATE tables SET finished = 1, results_json = ? WHERE room_code = ?`,
+      )
       .run(resultsJson, roomCode);
   }
 
@@ -108,14 +112,15 @@ export class SqliteStore implements GameStore {
  * falls back to MemoryStore so a build/environment problem never blocks
  * server startup.
  */
-export async function tryCreateSqliteStore(filePath: string): Promise<SqliteStore | null> {
+export async function tryCreateSqliteStore(
+  filePath: string,
+): Promise<SqliteStore | null> {
   try {
     const mod = await import("better-sqlite3");
     const Database = mod.default;
     const db = new Database(filePath);
     return new SqliteStore(db);
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.warn(
       `[quixx] better-sqlite3 unavailable (${(err as Error).message}); falling back to in-memory storage. Games will not survive a server restart.`,
     );

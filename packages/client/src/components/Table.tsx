@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
-import type { Color, EventMessage, SnapshotMessage } from "../net/protocol";
+import type {
+  ChatMessage,
+  Color,
+  EventMessage,
+  SnapshotMessage,
+} from "../net/protocol";
 import type { GameConnection } from "../net/socket";
 import { legalColorCombos, legalWhiteRows } from "../net/legalMoves";
 import { useJustRevealed } from "../net/useJustRevealed";
@@ -7,6 +12,7 @@ import { ScoreSheet } from "./ScoreSheet";
 import { DiceTray } from "./DiceTray";
 import { TurnBar } from "./TurnBar";
 import { EventLog } from "./EventLog";
+import { ChatPanel } from "./ChatPanel";
 import { GameOver } from "./GameOver";
 import { RollModal } from "./RollModal";
 
@@ -15,9 +21,16 @@ interface TableProps {
   snapshot: SnapshotMessage;
   you: string;
   events: EventMessage[];
+  chatMessages: ChatMessage[];
 }
 
-export function Table({ conn, snapshot, you, events }: TableProps) {
+export function Table({
+  conn,
+  snapshot,
+  you,
+  events,
+  chatMessages,
+}: TableProps) {
   const ownSheet = snapshot.sheets.find((s) => s.playerId === you);
   const opponents = snapshot.sheets.filter((s) => s.playerId !== you);
   const isActive = snapshot.activePlayerId === you;
@@ -188,6 +201,8 @@ export function Table({ conn, snapshot, you, events }: TableProps) {
         </div>
 
         <EventLog events={events} />
+
+        <ChatPanel conn={conn} messages={chatMessages} you={you} />
       </div>
 
       {snapshot.phase === "FINISHED" &&

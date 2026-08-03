@@ -22,6 +22,7 @@ export default function App() {
       snapshot={state.snapshot}
       you={state.playerId}
       events={state.events}
+      chatMessages={state.chatMessages}
     />
   );
 }

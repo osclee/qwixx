@@ -79,6 +79,14 @@ export interface EventMessage {
   at: number;
 }
 
+export interface ChatMessage {
+  type: "chat_broadcast";
+  playerId: string;
+  nickname: string;
+  text: string;
+  at: number;
+}
+
 export interface ErrorMessage {
   type: "error";
   code: string;
@@ -86,7 +94,11 @@ export interface ErrorMessage {
 }
 
 export type ServerMessage =
-  SnapshotMessage | JoinedMessage | EventMessage | ErrorMessage;
+  | SnapshotMessage
+  | JoinedMessage
+  | EventMessage
+  | ChatMessage
+  | ErrorMessage;
 
 export type WhiteActionInput =
   { kind: "cross"; color: Color; value: number } | { kind: "pass" };
@@ -108,7 +120,8 @@ export type ClientMessage =
   | { type: "leave_table" }
   | { type: "end_game" }
   | { type: "add_bot"; difficulty: BotDifficulty }
-  | { type: "remove_bot"; playerId: string };
+  | { type: "remove_bot"; playerId: string }
+  | { type: "chat_message"; text: string };
 
 // Hand-mirrored message-type inventories, compared against the server's
 // packages/server/src/protocol.ts by ../../../server/test/protocolSync.test.ts
@@ -127,12 +140,14 @@ export const CLIENT_MESSAGE_TYPES = [
   "end_game",
   "add_bot",
   "remove_bot",
+  "chat_message",
 ] as const;
 
 export const SERVER_MESSAGE_TYPES = [
   "snapshot",
   "joined",
   "event",
+  "chat_broadcast",
   "error",
 ] as const;
 

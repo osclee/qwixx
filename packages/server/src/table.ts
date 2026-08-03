@@ -17,6 +17,7 @@ import {
 } from "@quixx/engine";
 import { chooseColorMove, chooseWhiteMove, type BotDifficulty } from "./bot.js";
 import type {
+  ChatMessage,
   ErrorMessage,
   EventMessage,
   PublicResult,
@@ -85,6 +86,7 @@ export class Table {
   private phaseTimer: ReturnType<typeof setTimeout> | null = null;
   private botTimers = new Set<ReturnType<typeof setTimeout>>();
   private eventLog: EventMessage[] = [];
+  private chatLog: ChatMessage[] = [];
   private createdAt: number;
   /** True only immediately after Table.restore(), until the first player reconnects. */
   private awaitingFirstReconnectAfterRestore = false;
@@ -241,6 +243,7 @@ export class Table {
     this.connections.set(playerId, socket);
     this.sendTo(playerId, this.buildSnapshot(playerId));
     for (const evt of this.eventLog.slice(-20)) this.sendTo(playerId, evt);
+    for (const chat of this.chatLog.slice(-20)) this.sendTo(playerId, chat);
 
     // A restored table is deliberately left paused (see Table.restore) so it
     // doesn't auto-cascade through empty-seat turns before anyone comes
@@ -361,6 +364,30 @@ export class Table {
     return (
       this.seats.find((s) => s.playerId === playerId)?.nickname ?? playerId
     );
+  }
+
+  // ---------- Chat ----------
+
+  /** Broadcasts a chat message to everyone connected. Any seated player may chat, at any lobby state. */
+  sendChat(
+    playerId: string,
+    text: string,
+  ): { ok: true } | { ok: false; error: string } {
+    const seat = this.seats.find((s) => s.playerId === playerId);
+    if (!seat) return { ok: false, error: "Not seated at this table" };
+    const trimmed = text.trim();
+    if (!trimmed) return { ok: false, error: "Message is empty" };
+
+    const msg: ChatMessage = {
+      type: "chat_broadcast",
+      playerId,
+      nickname: seat.nickname,
+      text: trimmed,
+      at: this.now(),
+    };
+    this.chatLog.push(msg);
+    this.broadcast(msg);
+    return { ok: true };
   }
 
   // ---------- Turn phase machine ----------

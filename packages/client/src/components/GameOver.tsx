@@ -4,6 +4,7 @@ interface GameOverProps {
   results: PublicResult[];
   you: string;
   isHost: boolean;
+  roomCode: string;
   onClose: () => void;
   onNewGame: () => void;
 }
@@ -14,6 +15,7 @@ export function GameOver({
   results,
   you,
   isHost,
+  roomCode,
   onClose,
   onNewGame,
 }: GameOverProps) {
@@ -87,6 +89,14 @@ export function GameOver({
             Waiting for the host to start a new game…
           </p>
         )}
+        <a
+          className="game-over__history-link"
+          href={`/history/${roomCode}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          View full game history ↗
+        </a>
       </div>
     </div>
   );

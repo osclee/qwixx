@@ -38,6 +38,13 @@ export interface PublicResult {
   rank: number;
 }
 
+/** Response body for GET /api/tables/:roomCode/history (not a WS message). */
+export interface GameHistoryResponse {
+  roomCode: string;
+  createdAt: number; // epoch ms
+  results: PublicResult[];
+}
+
 export interface DiceRoll {
   w1: number;
   w2: number;

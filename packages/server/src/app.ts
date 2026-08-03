@@ -6,6 +6,7 @@ import { MemoryStore } from "./store/memory.js";
 import { tryCreateSqliteStore } from "./store/sqlite.js";
 import { TableRegistry } from "./registry.js";
 import { registerWebSocketRoute, type WebSocketRouteOptions } from "./ws.js";
+import { buildHistoryResponse } from "./history.js";
 import type { GameStore } from "./store/index.js";
 import type { TableDeps } from "./table.js";
 
@@ -50,6 +51,16 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<{
   );
 
   app.get("/api/health", async () => ({ ok: true }));
+
+  app.get("/api/tables/:roomCode/history", async (req, reply) => {
+    const { roomCode } = req.params as { roomCode: string };
+    const history = store.getHistory(roomCode.toUpperCase());
+    if (!history) {
+      reply.code(404).send({ error: "not_found" });
+      return;
+    }
+    reply.send(buildHistoryResponse(history));
+  });
 
   if (opts.clientDist) {
     const clientDist = opts.clientDist;

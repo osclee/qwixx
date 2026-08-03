@@ -212,6 +212,7 @@ export function Table({
             results={snapshot.results}
             you={you}
             isHost={snapshot.hostPlayerId === you}
+            roomCode={snapshot.roomCode}
             onClose={() => setGameOverDismissed(true)}
             onNewGame={() => conn.newGame()}
           />

@@ -1,5 +1,10 @@
 import type BetterSqlite3 from "better-sqlite3";
-import type { GameStore, StoredActiveTable, StoredTable } from "./index.js";
+import type {
+  GameStore,
+  StoredActiveTable,
+  StoredGameHistory,
+  StoredTable,
+} from "./index.js";
 
 /**
  * Durable store backed by better-sqlite3 (a native module). One row per
@@ -93,6 +98,24 @@ export class SqliteStore implements GameStore {
         `UPDATE tables SET finished = 1, results_json = ? WHERE room_code = ?`,
       )
       .run(resultsJson, roomCode);
+  }
+
+  getHistory(roomCode: string): StoredGameHistory | null {
+    const row = this.db
+      .prepare(
+        `SELECT seats_json, created_at, results_json FROM tables
+         WHERE room_code = ? AND finished = 1`,
+      )
+      .get(roomCode) as
+      | { seats_json: string; created_at: number; results_json: string | null }
+      | undefined;
+    if (!row || !row.results_json) return null;
+    return {
+      roomCode,
+      createdAt: row.created_at,
+      seats: JSON.parse(row.seats_json),
+      results: JSON.parse(row.results_json),
+    };
   }
 
   deleteTable(roomCode: string): void {

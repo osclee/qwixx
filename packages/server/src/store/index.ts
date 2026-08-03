@@ -1,3 +1,4 @@
+import type { PlayerResult } from "@quixx/engine";
 import type { BotDifficulty } from "../bot.js";
 
 export interface StoredSeat {
@@ -22,6 +23,13 @@ export interface StoredActiveTable extends StoredTable {
   turnSeq: number;
 }
 
+export interface StoredGameHistory {
+  roomCode: string;
+  createdAt: number;
+  seats: StoredSeat[];
+  results: PlayerResult[];
+}
+
 /**
  * Persistence boundary. `MemoryStore` is the always-available fallback;
  * `SqliteStore` adds durability across restarts. Both are swappable behind
@@ -35,6 +43,8 @@ export interface GameStore {
   /** Tables that were still in progress (not finished) when last persisted. */
   loadActive(): StoredActiveTable[];
   saveResults(roomCode: string, resultsJson: string): void;
+  /** Finished-table results for the history read-path, or null if unfinished/unknown. */
+  getHistory(roomCode: string): StoredGameHistory | null;
   deleteTable(roomCode: string): void;
   close(): void;
 }

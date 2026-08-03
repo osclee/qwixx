@@ -95,6 +95,13 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
 
 export type ClientMessage = z.infer<typeof clientMessageSchema>;
 
+// Derived from the zod union above, so this list can never itself drift from
+// ClientMessage -- used by test/protocolSync.test.ts to check it against the
+// hand-mirrored list in packages/client/src/net/protocol.ts.
+export const CLIENT_MESSAGE_TYPES: string[] = clientMessageSchema.options.map(
+  (option) => option.shape.type.value,
+);
+
 // ---------- Server -> Client ----------
 
 export interface PublicRowState {
@@ -162,3 +169,15 @@ export interface ErrorMessage {
 }
 
 export type ServerMessage = SnapshotMessage | JoinedMessage | EventMessage | ErrorMessage;
+
+// Hand-maintained, since ServerMessage isn't zod-validated (the server never
+// validates its own outbound messages). Compared against the equivalent list
+// in packages/client/src/net/protocol.ts by test/protocolSync.test.ts.
+export const SERVER_MESSAGE_TYPES = ["snapshot", "joined", "event", "error"] as const;
+
+type AssertNever<T extends never> = T;
+// Fails to typecheck if a ServerMessage variant is added without adding it
+// to SERVER_MESSAGE_TYPES above.
+type _ServerMessageTypesComplete = AssertNever<
+  Exclude<ServerMessage["type"], (typeof SERVER_MESSAGE_TYPES)[number]>
+>;

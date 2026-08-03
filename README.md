@@ -4,6 +4,8 @@ Online multiplayer Qwixx: a browser client (React) talking over WebSocket to
 an authoritative Node/Fastify server, with a shared rule engine used by both
 sides. Supports bot players (easy/medium/hard) for filling empty seats.
 
+Inspired by https://gamewright.com/product/Qwixx!
+
 ```
 packages/
   engine/   @quixx/engine — pure, dependency-free rule engine (rows, legality, scoring, dice)

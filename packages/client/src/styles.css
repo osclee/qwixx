@@ -688,6 +688,9 @@ button {
 .table__own-sheet {
   grid-column: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .table__opponents {
@@ -999,7 +1002,6 @@ button {
 /* ---------- Chat panel ---------- */
 
 .chat-panel {
-  grid-column: 2;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -1193,8 +1195,7 @@ button {
     order: 1;
   }
   .table__opponents,
-  .event-log,
-  .chat-panel {
+  .event-log {
     grid-column: 1;
     grid-row: auto;
   }
@@ -1203,9 +1204,6 @@ button {
   }
   .event-log {
     order: 3;
-  }
-  .chat-panel {
-    order: 4;
   }
 }
 

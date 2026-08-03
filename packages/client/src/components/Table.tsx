@@ -192,6 +192,8 @@ export function Table({
               onCellClick={handleCellClick}
             />
           )}
+
+          <ChatPanel conn={conn} messages={chatMessages} you={you} />
         </div>
 
         <div className="table__opponents">
@@ -201,8 +203,6 @@ export function Table({
         </div>
 
         <EventLog events={events} />
-
-        <ChatPanel conn={conn} messages={chatMessages} you={you} />
       </div>
 
       {snapshot.phase === "FINISHED" &&

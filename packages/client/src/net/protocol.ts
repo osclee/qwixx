@@ -106,3 +106,34 @@ export type ClientMessage =
   | { type: "end_game" }
   | { type: "add_bot"; difficulty: BotDifficulty }
   | { type: "remove_bot"; playerId: string };
+
+// Hand-mirrored message-type inventories, compared against the server's
+// packages/server/src/protocol.ts by ../../../server/test/protocolSync.test.ts
+// (the server side derives its client-message list straight from its zod
+// union, so this file is the only place either list is hand-maintained).
+export const CLIENT_MESSAGE_TYPES = [
+  "create_table",
+  "join_table",
+  "rejoin",
+  "start_game",
+  "roll_dice",
+  "new_game",
+  "submit_white",
+  "submit_color",
+  "leave_table",
+  "end_game",
+  "add_bot",
+  "remove_bot",
+] as const;
+
+export const SERVER_MESSAGE_TYPES = ["snapshot", "joined", "event", "error"] as const;
+
+type AssertNever<T extends never> = T;
+// Fails to typecheck if either union above gains a variant that isn't
+// reflected in the corresponding array.
+type _ClientMessageTypesComplete = AssertNever<
+  Exclude<ClientMessage["type"], (typeof CLIENT_MESSAGE_TYPES)[number]>
+>;
+type _ServerMessageTypesComplete = AssertNever<
+  Exclude<ServerMessage["type"], (typeof SERVER_MESSAGE_TYPES)[number]>
+>;

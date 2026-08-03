@@ -1,5 +1,6 @@
 import type {
   BotDifficulty,
+  ChatMessage,
   ClientMessage,
   ColorActionInput,
   ErrorMessage,
@@ -22,11 +23,13 @@ export interface ClientState {
   playerId: string | null;
   snapshot: SnapshotMessage | null;
   events: EventMessage[];
+  chatMessages: ChatMessage[];
   lastError: ErrorMessage | null;
   errorSeq: number;
 }
 
 const MAX_EVENTS = 100;
+const MAX_CHAT_MESSAGES = 200;
 const RECONNECT_BASE_MS = 500;
 const RECONNECT_MAX_MS = 8000;
 
@@ -36,6 +39,7 @@ function initialState(): ClientState {
     playerId: null,
     snapshot: null,
     events: [],
+    chatMessages: [],
     lastError: null,
     errorSeq: 0,
   };
@@ -153,6 +157,13 @@ export class GameConnection {
         this.setState({ events });
         break;
       }
+      case "chat_broadcast": {
+        const chatMessages = [...this.state.chatMessages, msg].slice(
+          -MAX_CHAT_MESSAGES,
+        );
+        this.setState({ chatMessages });
+        break;
+      }
       case "error": {
         if (msg.code === "rejoin_failed") clearStoredSessionToken();
         this.setState({ lastError: msg, errorSeq: this.state.errorSeq + 1 });
@@ -211,6 +222,10 @@ export class GameConnection {
     this.sendRaw({ type: "remove_bot", playerId });
   }
 
+  sendChat(text: string): void {
+    this.sendRaw({ type: "chat_message", text });
+  }
+
   leaveTable(): void {
     // Only keep the session token around if the game is still actually live
     // (IN_PROGRESS) — that's what lets the Lobby offer a "rejoin" option.
@@ -219,7 +234,12 @@ export class GameConnection {
     const wasLive = this.state.snapshot?.lobbyState === "IN_PROGRESS";
     this.sendRaw({ type: "leave_table" });
     if (!wasLive) clearStoredSessionToken();
-    this.setState({ snapshot: null, playerId: null, events: [] });
+    this.setState({
+      snapshot: null,
+      playerId: null,
+      events: [],
+      chatMessages: [],
+    });
   }
 
   rejoin(): void {

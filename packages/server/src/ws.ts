@@ -232,6 +232,13 @@ export function registerWebSocketRoute(
             boundTable.sendError(boundPlayerId, "remove_bot_failed", res.error);
           break;
         }
+        case "chat_message": {
+          if (!boundTable || !boundPlayerId) return unbound();
+          const res = boundTable.sendChat(boundPlayerId, msg.text);
+          if (!res.ok)
+            boundTable.sendError(boundPlayerId, "chat_failed", res.error);
+          break;
+        }
       }
 
       function unbound() {

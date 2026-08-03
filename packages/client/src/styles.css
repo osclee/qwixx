@@ -996,6 +996,73 @@ button {
   border-radius: 4px;
 }
 
+/* ---------- Chat panel ---------- */
+
+.chat-panel {
+  grid-column: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  box-shadow: var(--shadow-sm);
+}
+.chat-panel h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+.chat-panel__messages {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.chat-panel__message {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+.chat-panel__message--own {
+  color: var(--text);
+}
+.chat-panel__nickname {
+  font-weight: 700;
+  color: var(--text);
+}
+.chat-panel__form {
+  display: flex;
+  gap: 0.5rem;
+}
+.chat-panel__form input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.chat-panel__messages::-webkit-scrollbar {
+  width: 8px;
+}
+.chat-panel__messages::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
 /* ---------- Game over ---------- */
 
 .game-over {
@@ -1126,7 +1193,8 @@ button {
     order: 1;
   }
   .table__opponents,
-  .event-log {
+  .event-log,
+  .chat-panel {
     grid-column: 1;
     grid-row: auto;
   }
@@ -1135,6 +1203,9 @@ button {
   }
   .event-log {
     order: 3;
+  }
+  .chat-panel {
+    order: 4;
   }
 }
 

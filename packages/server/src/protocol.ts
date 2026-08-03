@@ -82,6 +82,11 @@ export const removeBotMsg = z.object({
   playerId: z.string(),
 });
 
+export const chatMessageMsg = z.object({
+  type: z.literal("chat_message"),
+  text: z.string().trim().min(1).max(500),
+});
+
 export const clientMessageSchema = z.discriminatedUnion("type", [
   createTableMsg,
   joinTableMsg,
@@ -95,6 +100,7 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
   endGameMsg,
   addBotMsg,
   removeBotMsg,
+  chatMessageMsg,
 ]);
 
 export type ClientMessage = z.infer<typeof clientMessageSchema>;
@@ -173,6 +179,14 @@ export interface EventMessage {
   at: number;
 }
 
+export interface ChatMessage {
+  type: "chat_broadcast";
+  playerId: string;
+  nickname: string;
+  text: string;
+  at: number;
+}
+
 export interface ErrorMessage {
   type: "error";
   code: string;
@@ -180,7 +194,11 @@ export interface ErrorMessage {
 }
 
 export type ServerMessage =
-  SnapshotMessage | JoinedMessage | EventMessage | ErrorMessage;
+  | SnapshotMessage
+  | JoinedMessage
+  | EventMessage
+  | ChatMessage
+  | ErrorMessage;
 
 // Hand-maintained, since ServerMessage isn't zod-validated (the server never
 // validates its own outbound messages). Compared against the equivalent list
@@ -189,6 +207,7 @@ export const SERVER_MESSAGE_TYPES = [
   "snapshot",
   "joined",
   "event",
+  "chat_broadcast",
   "error",
 ] as const;
 

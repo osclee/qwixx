@@ -682,18 +682,22 @@ button {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 1rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.table__column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   min-width: 0;
 }
 
 .table__own-sheet {
-  grid-column: 1;
-  grid-row: 1;
   min-width: 0;
 }
 
 .table__opponents {
-  grid-column: 2;
-  grid-row: 1 / span 2;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -955,8 +959,6 @@ button {
 /* ---------- Event log ---------- */
 
 .event-log {
-  grid-column: 2;
-  grid-row: 3;
   min-width: 0;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -1001,8 +1003,6 @@ button {
 /* ---------- Chat panel ---------- */
 
 .chat-panel {
-  grid-column: 1;
-  grid-row: 2;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -1288,24 +1288,6 @@ button {
 @media (max-width: 720px) {
   .table__body {
     grid-template-columns: 1fr;
-  }
-  .table__own-sheet {
-    order: 1;
-  }
-  .table__opponents,
-  .event-log,
-  .chat-panel {
-    grid-column: 1;
-    grid-row: auto;
-  }
-  .chat-panel {
-    order: 2;
-  }
-  .table__opponents {
-    order: 3;
-  }
-  .event-log {
-    order: 4;
   }
 }
 

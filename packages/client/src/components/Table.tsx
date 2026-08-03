@@ -184,25 +184,29 @@ export function Table({
       )}
 
       <div className="table__body">
-        <div className="table__own-sheet">
-          {ownSheet && (
-            <ScoreSheet
-              sheet={ownSheet}
-              legalValues={legalValues}
-              onCellClick={handleCellClick}
-            />
-          )}
+        <div className="table__column">
+          <div className="table__own-sheet">
+            {ownSheet && (
+              <ScoreSheet
+                sheet={ownSheet}
+                legalValues={legalValues}
+                onCellClick={handleCellClick}
+              />
+            )}
+          </div>
+
+          <ChatPanel conn={conn} messages={chatMessages} you={you} />
         </div>
 
-        <div className="table__opponents">
-          {opponents.map((s) => (
-            <ScoreSheet key={s.playerId} sheet={s} compact />
-          ))}
+        <div className="table__column">
+          <div className="table__opponents">
+            {opponents.map((s) => (
+              <ScoreSheet key={s.playerId} sheet={s} compact />
+            ))}
+          </div>
+
+          <EventLog events={events} />
         </div>
-
-        <EventLog events={events} />
-
-        <ChatPanel conn={conn} messages={chatMessages} you={you} />
       </div>
 
       {snapshot.phase === "FINISHED" &&

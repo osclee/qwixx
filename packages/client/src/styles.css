@@ -1084,9 +1084,19 @@ button {
   .table__body {
     grid-template-columns: 1fr;
   }
+  .table__own-sheet {
+    order: 1;
+  }
   .table__opponents,
   .event-log {
     grid-column: 1;
+    grid-row: auto;
+  }
+  .table__opponents {
+    order: 2;
+  }
+  .event-log {
+    order: 3;
   }
 }
 

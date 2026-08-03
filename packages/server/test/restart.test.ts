@@ -40,8 +40,12 @@ describe("restart durability (SQLite-backed)", () => {
     const aliceJoined = await alice.waitForType("joined");
 
     const bob = await TestClient.connect(server1.url);
-    bob.send({ type: "join_table", roomCode: aliceJoined.roomCode, nickname: "Bob" });
-    const bobJoined = await bob.waitForType("joined");
+    bob.send({
+      type: "join_table",
+      roomCode: aliceJoined.roomCode,
+      nickname: "Bob",
+    });
+    const _bobJoined = await bob.waitForType("joined");
 
     await alice.waitForSnapshot((s) => s.sheets.length === 2);
     alice.send({ type: "start_game" });
@@ -54,7 +58,8 @@ describe("restart durability (SQLite-backed)", () => {
     alice.send({ type: "submit_white", action: { kind: "pass" } });
     bob.send({ type: "submit_white", action: { kind: "pass" } });
     const colorSnap = await alice.waitForSnapshot((s) => s.phase === "COLOR");
-    const active = colorSnap.activePlayerId === aliceJoined.playerId ? alice : bob;
+    const active =
+      colorSnap.activePlayerId === aliceJoined.playerId ? alice : bob;
     active.send({ type: "submit_color", action: { kind: "pass" } });
     const whiteSnap2 = await alice.waitForSnapshot((s) => s.phase === "WHITE");
     expect(whiteSnap2.turnSeq).toBe(1);
@@ -84,7 +89,9 @@ describe("restart durability (SQLite-backed)", () => {
 
     expect(restoredSnap.lobbyState).toBe("IN_PROGRESS");
     expect(restoredSnap.sheets).toHaveLength(2);
-    const restoredActiveSheet = restoredSnap.sheets.find((s: any) => s.playerId === activePlayerId);
-    expect(restoredActiveSheet.penalties).toBe(1); // survived the restart
+    const restoredActiveSheet = restoredSnap.sheets.find(
+      (s) => s.playerId === activePlayerId,
+    );
+    expect(restoredActiveSheet!.penalties).toBe(1); // survived the restart
   });
 });

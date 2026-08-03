@@ -41,6 +41,14 @@ export interface LegalColorCombo {
 }
 
 /** Legal color-combo moves for the active player's own sheet, given the current roll and dice in play. */
-export function legalColorCombos(sheet: PublicSheet, roll: DiceRoll, diceInPlay: Color[]): LegalColorCombo[] {
-  return legalColorMoves(toEngineSheet(sheet), roll as EngineDiceRoll, new Set(diceInPlay));
+export function legalColorCombos(
+  sheet: PublicSheet,
+  roll: DiceRoll,
+  diceInPlay: Color[],
+): LegalColorCombo[] {
+  return legalColorMoves(
+    toEngineSheet(sheet),
+    roll as EngineDiceRoll,
+    new Set(diceInPlay),
+  );
 }

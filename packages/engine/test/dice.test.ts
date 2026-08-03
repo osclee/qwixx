@@ -19,8 +19,14 @@ describe("rollDice", () => {
   });
 
   it("is deterministic for a given seed", () => {
-    const rollA = rollDice(new Set(["red", "yellow", "green", "blue"]), seededDie(7));
-    const rollB = rollDice(new Set(["red", "yellow", "green", "blue"]), seededDie(7));
+    const rollA = rollDice(
+      new Set(["red", "yellow", "green", "blue"]),
+      seededDie(7),
+    );
+    const rollB = rollDice(
+      new Set(["red", "yellow", "green", "blue"]),
+      seededDie(7),
+    );
     expect(rollA).toEqual(rollB);
   });
 });

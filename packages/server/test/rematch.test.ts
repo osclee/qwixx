@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { startTestServer } from "./testServer.js";
 import { TestClient } from "./testClient.js";
+import type { SnapshotMessage } from "../src/protocol.js";
 
 describe("rematch (new_game)", () => {
   let close: (() => Promise<void>) | null = null;
@@ -18,8 +19,12 @@ describe("rematch (new_game)", () => {
     const aliceJoined = await alice.waitForType("joined");
 
     const bob = await TestClient.connect(server.url);
-    bob.send({ type: "join_table", roomCode: aliceJoined.roomCode, nickname: "Bob" });
-    const bobJoined = await bob.waitForType("joined");
+    bob.send({
+      type: "join_table",
+      roomCode: aliceJoined.roomCode,
+      nickname: "Bob",
+    });
+    const _bobJoined = await bob.waitForType("joined");
 
     await alice.waitForSnapshot((s) => s.sheets.length === 2);
 
@@ -37,8 +42,10 @@ describe("rematch (new_game)", () => {
     expect(midGameErr.message).toMatch(/not over/i);
 
     // Drive the game to completion purely by passing everything.
-    let finalSnap: any = null;
-    let whiteSnap = await alice.waitForSnapshot((s) => s.phase === "WHITE" || s.phase === "FINISHED");
+    let finalSnap: SnapshotMessage | null = null;
+    let whiteSnap = await alice.waitForSnapshot(
+      (s) => s.phase === "WHITE" || s.phase === "FINISHED",
+    );
     for (let turn = 0; turn < 60 && !finalSnap; turn++) {
       if (whiteSnap.phase === "FINISHED") {
         finalSnap = whiteSnap;
@@ -47,17 +54,24 @@ describe("rematch (new_game)", () => {
       alice.send({ type: "submit_white", action: { kind: "pass" } });
       bob.send({ type: "submit_white", action: { kind: "pass" } });
 
-      const colorOrFinished = await alice.waitFor(
-        (m) => m.type === "snapshot" && (m.phase === "COLOR" || m.phase === "FINISHED"),
-      );
+      const colorOrFinished = (await alice.waitFor(
+        (m) =>
+          m.type === "snapshot" &&
+          (m.phase === "COLOR" || m.phase === "FINISHED"),
+      )) as SnapshotMessage;
       if (colorOrFinished.phase === "FINISHED") {
         finalSnap = colorOrFinished;
         break;
       }
-      const active = colorOrFinished.activePlayerId === aliceJoined.playerId ? alice : bob;
+      const active =
+        colorOrFinished.activePlayerId === aliceJoined.playerId ? alice : bob;
       active.send({ type: "submit_color", action: { kind: "pass" } });
 
-      whiteSnap = await alice.waitFor((m) => m.type === "snapshot" && (m.phase === "WHITE" || m.phase === "FINISHED"));
+      whiteSnap = (await alice.waitFor(
+        (m) =>
+          m.type === "snapshot" &&
+          (m.phase === "WHITE" || m.phase === "FINISHED"),
+      )) as SnapshotMessage;
     }
     if (!finalSnap) throw new Error("game did not finish within 60 turns");
     expect(finalSnap.lobbyState).toBe("FINISHED");
@@ -70,7 +84,9 @@ describe("rematch (new_game)", () => {
 
     // Host sends the table back to the lobby.
     alice.send({ type: "new_game" });
-    const lobbySnap = await alice.waitForSnapshot((s) => s.lobbyState === "LOBBY");
+    const lobbySnap = await alice.waitForSnapshot(
+      (s) => s.lobbyState === "LOBBY",
+    );
     expect(lobbySnap.phase).toBe("LOBBY");
     expect(lobbySnap.results).toBeNull();
     expect(lobbySnap.sheets).toHaveLength(2);
@@ -83,12 +99,16 @@ describe("rematch (new_game)", () => {
     }
 
     // Both clients should have landed back in the lobby too.
-    const bobLobbySnap = await bob.waitForSnapshot((s) => s.lobbyState === "LOBBY");
+    const bobLobbySnap = await bob.waitForSnapshot(
+      (s) => s.lobbyState === "LOBBY",
+    );
     expect(bobLobbySnap.sheets).toHaveLength(2);
 
     // And a fresh game can actually be started.
     alice.send({ type: "start_game" });
-    const newGameWhite = await alice.waitForSnapshot((s) => s.phase === "WHITE");
+    const newGameWhite = await alice.waitForSnapshot(
+      (s) => s.phase === "WHITE",
+    );
     expect(newGameWhite.lobbyState).toBe("IN_PROGRESS");
     expect(newGameWhite.turnSeq).toBe(0);
   });

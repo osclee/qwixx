@@ -8,7 +8,8 @@
 
 export type Color = "red" | "yellow" | "green" | "blue";
 export type WhiteDie = "w1" | "w2";
-export type Phase = "LOBBY" | "ROLLING" | "WHITE" | "COLOR" | "RESOLVE" | "FINISHED";
+export type Phase =
+  "LOBBY" | "ROLLING" | "WHITE" | "COLOR" | "RESOLVE" | "FINISHED";
 export type LobbyState = "LOBBY" | "IN_PROGRESS" | "FINISHED";
 
 export interface PublicRowState {
@@ -84,9 +85,11 @@ export interface ErrorMessage {
   message: string;
 }
 
-export type ServerMessage = SnapshotMessage | JoinedMessage | EventMessage | ErrorMessage;
+export type ServerMessage =
+  SnapshotMessage | JoinedMessage | EventMessage | ErrorMessage;
 
-export type WhiteActionInput = { kind: "cross"; color: Color; value: number } | { kind: "pass" };
+export type WhiteActionInput =
+  { kind: "cross"; color: Color; value: number } | { kind: "pass" };
 export type ColorActionInput =
   | { kind: "cross"; whiteDie: WhiteDie; color: Color; value: number }
   | { kind: "pass" };

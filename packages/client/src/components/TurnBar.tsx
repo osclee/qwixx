@@ -26,15 +26,24 @@ const PHASE_ICON: Record<SnapshotMessage["phase"], string> = {
   FINISHED: "🏁",
 };
 
-export function TurnBar({ snapshot, you, onPassWhite, onPassColor }: TurnBarProps) {
-  const activeSheet = snapshot.sheets.find((s) => s.playerId === snapshot.activePlayerId);
+export function TurnBar({
+  snapshot,
+  you,
+  onPassWhite,
+  onPassColor,
+}: TurnBarProps) {
+  const activeSheet = snapshot.sheets.find(
+    (s) => s.playerId === snapshot.activePlayerId,
+  );
   const youAnsweredWhite = snapshot.whiteSubmitted.includes(you);
   const isActive = snapshot.activePlayerId === you;
 
   return (
     <div className="turn-bar">
       <div className="turn-bar__info">
-        <span className={`turn-bar__phase turn-bar__phase--${snapshot.phase.toLowerCase()}`}>
+        <span
+          className={`turn-bar__phase turn-bar__phase--${snapshot.phase.toLowerCase()}`}
+        >
           <span className="turn-bar__phase-icon" aria-hidden="true">
             {PHASE_ICON[snapshot.phase]}
           </span>
@@ -46,7 +55,10 @@ export function TurnBar({ snapshot, you, onPassWhite, onPassColor }: TurnBarProp
             {isActive && " (you)"}
           </span>
         )}
-        <Timer phaseDeadline={snapshot.phaseDeadline} serverNow={snapshot.serverNow} />
+        <Timer
+          phaseDeadline={snapshot.phaseDeadline}
+          serverNow={snapshot.serverNow}
+        />
       </div>
       <div className="turn-bar__actions">
         {snapshot.phase === "WHITE" && !youAnsweredWhite && (

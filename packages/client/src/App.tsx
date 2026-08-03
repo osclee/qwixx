@@ -11,8 +11,17 @@ export default function App() {
   }
 
   if (state.snapshot.lobbyState === "LOBBY") {
-    return <WaitingRoom conn={conn} snapshot={state.snapshot} you={state.playerId} />;
+    return (
+      <WaitingRoom conn={conn} snapshot={state.snapshot} you={state.playerId} />
+    );
   }
 
-  return <Table conn={conn} snapshot={state.snapshot} you={state.playerId} events={state.events} />;
+  return (
+    <Table
+      conn={conn}
+      snapshot={state.snapshot}
+      you={state.playerId}
+      events={state.events}
+    />
+  );
 }

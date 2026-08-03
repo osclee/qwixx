@@ -12,7 +12,11 @@ describe("disconnect and rejoin", () => {
   it("instantly unblocks a stuck phase on disconnect, then lets the same seat rejoin mid-game", async () => {
     // Deliberately long timers: we want to prove the disconnect itself
     // (not a timeout) is what unblocks the turn.
-    const server = await startTestServer({ seed: 11, whitePhaseMs: 60_000, colorPhaseMs: 60_000 });
+    const server = await startTestServer({
+      seed: 11,
+      whitePhaseMs: 60_000,
+      colorPhaseMs: 60_000,
+    });
     close = server.close;
 
     const alice = await TestClient.connect(server.url);
@@ -20,7 +24,11 @@ describe("disconnect and rejoin", () => {
     const aliceJoined = await alice.waitForType("joined");
 
     const bob = await TestClient.connect(server.url);
-    bob.send({ type: "join_table", roomCode: aliceJoined.roomCode, nickname: "Bob" });
+    bob.send({
+      type: "join_table",
+      roomCode: aliceJoined.roomCode,
+      nickname: "Bob",
+    });
     const bobJoined = await bob.waitForType("joined");
 
     await alice.waitForSnapshot((s) => s.sheets.length === 2);
@@ -36,8 +44,12 @@ describe("disconnect and rejoin", () => {
     const activeIsAlice = activePlayerId === aliceJoined.playerId;
 
     const goneClient = activeIsAlice ? alice : bob;
-    const goneSession = activeIsAlice ? aliceJoined.sessionToken : bobJoined.sessionToken;
-    const gonePlayerId = activeIsAlice ? aliceJoined.playerId : bobJoined.playerId;
+    const goneSession = activeIsAlice
+      ? aliceJoined.sessionToken
+      : bobJoined.sessionToken;
+    const gonePlayerId = activeIsAlice
+      ? aliceJoined.playerId
+      : bobJoined.playerId;
     // The client that stays connected throughout — all phase tracking after
     // the disconnect reads from this one stream only.
     const stayingClient = activeIsAlice ? bob : alice;
@@ -61,9 +73,11 @@ describe("disconnect and rejoin", () => {
     );
     expect(whiteSnap2.turnSeq).toBeGreaterThan(whiteSnap1.turnSeq);
 
-    const goneSheet = whiteSnap2.sheets.find((s: any) => s.playerId === gonePlayerId);
-    expect(goneSheet.penalties).toBe(1);
-    expect(goneSheet.connected).toBe(false);
+    const goneSheet = whiteSnap2.sheets.find(
+      (s) => s.playerId === gonePlayerId,
+    );
+    expect(goneSheet!.penalties).toBe(1);
+    expect(goneSheet!.connected).toBe(false);
 
     // Now the same browser tab "reopens" and rejoins with its stored session
     // token. attachConnection sends its snapshot (and recent events)
@@ -77,17 +91,23 @@ describe("disconnect and rejoin", () => {
     expect(joinedAgain.roomCode).toBe(aliceJoined.roomCode);
 
     expect(snapOnRejoin.turnSeq).toBe(whiteSnap2.turnSeq);
-    const ownSheetOnRejoin = snapOnRejoin.sheets.find((s: any) => s.playerId === gonePlayerId);
-    expect(ownSheetOnRejoin.penalties).toBe(1);
-    expect(ownSheetOnRejoin.connected).toBe(true);
+    const ownSheetOnRejoin = snapOnRejoin.sheets.find(
+      (s) => s.playerId === gonePlayerId,
+    );
+    expect(ownSheetOnRejoin!.penalties).toBe(1);
+    expect(ownSheetOnRejoin!.connected).toBe(true);
 
     // Prove the reconnected socket is fully wired for future turns: both
     // players (staying + rejoined) can act again this same turn.
     stayingClient.send({ type: "submit_white", action: { kind: "pass" } });
     rejoined.send({ type: "submit_white", action: { kind: "pass" } });
 
-    const colorSnap = await stayingClient.waitForSnapshot((s) => s.phase === "COLOR", 3000);
-    const nowActive = colorSnap.activePlayerId === gonePlayerId ? rejoined : stayingClient;
+    const colorSnap = await stayingClient.waitForSnapshot(
+      (s) => s.phase === "COLOR",
+      3000,
+    );
+    const nowActive =
+      colorSnap.activePlayerId === gonePlayerId ? rejoined : stayingClient;
     nowActive.send({ type: "submit_color", action: { kind: "pass" } });
 
     const whiteSnap3 = await stayingClient.waitForSnapshot(

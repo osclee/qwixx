@@ -110,9 +110,16 @@ describe("deferred die removal (§6) — deliberate rule decision", () => {
 });
 
 describe("end conditions (§7)", () => {
-  function lockColor(state: ReturnType<typeof createGame>, playerId: string, color: "red" | "yellow" | "green" | "blue") {
+  function lockColor(
+    state: ReturnType<typeof createGame>,
+    playerId: string,
+    color: "red" | "yellow" | "green" | "blue",
+  ) {
     const terminal = color === "green" || color === "blue" ? 2 : 12;
-    const ramp = color === "green" || color === "blue" ? [12, 11, 10, 9, 8] : [2, 3, 4, 5, 6];
+    const ramp =
+      color === "green" || color === "blue"
+        ? [12, 11, 10, 9, 8]
+        : [2, 3, 4, 5, 6];
     for (const v of ramp) applyCross(state, playerId, color, v);
     applyCross(state, playerId, color, terminal);
   }

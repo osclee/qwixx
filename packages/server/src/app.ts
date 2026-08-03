@@ -20,13 +20,19 @@ export interface BuildAppOptions {
   logger?: boolean;
 }
 
-export async function buildApp(
-  opts: BuildAppOptions = {},
-): Promise<{ app: FastifyInstance; registry: TableRegistry; store: GameStore }> {
+export async function buildApp(opts: BuildAppOptions = {}): Promise<{
+  app: FastifyInstance;
+  registry: TableRegistry;
+  store: GameStore;
+}> {
   const app = Fastify({ logger: opts.logger ?? false });
 
   const store =
-    opts.store ?? (await tryCreateSqliteStore(opts.dbPath ?? path.join(process.cwd(), "quixx.sqlite"))) ?? new MemoryStore();
+    opts.store ??
+    (await tryCreateSqliteStore(
+      opts.dbPath ?? path.join(process.cwd(), "quixx.sqlite"),
+    )) ??
+    new MemoryStore();
 
   const registry = new TableRegistry({
     store,
@@ -43,7 +49,11 @@ export async function buildApp(
     const clientDist = opts.clientDist;
     await app.register(fastifyStatic, { root: clientDist, wildcard: false });
     app.setNotFoundHandler((req, reply) => {
-      if (req.method === "GET" && !req.url.startsWith("/api") && !req.url.startsWith("/ws")) {
+      if (
+        req.method === "GET" &&
+        !req.url.startsWith("/api") &&
+        !req.url.startsWith("/ws")
+      ) {
         reply.sendFile("index.html");
       } else {
         reply.code(404).send({ error: "not_found" });

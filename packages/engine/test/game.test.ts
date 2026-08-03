@@ -42,7 +42,11 @@ function playFullGame(seed: number, playerCount: number) {
     const active = activePlayerId(state);
     const activeSheet = state.sheets[active];
     if (activeSheet) {
-      const colorMoves = legalColorMoves(activeSheet, state.roll, state.diceInPlay);
+      const colorMoves = legalColorMoves(
+        activeSheet,
+        state.roll,
+        state.diceInPlay,
+      );
       if (colorMoves.length > 0) {
         const move = colorMoves[0];
         if (move) applyCross(state, active, move.color, move.value);
@@ -67,7 +71,9 @@ describe("full game replay (integration)", () => {
         expect(state.results).toHaveLength(playerCount);
 
         // End condition actually holds (§7).
-        const anyMaxed = Object.values(state.sheets).some((s) => s.penalties >= 4);
+        const anyMaxed = Object.values(state.sheets).some(
+          (s) => s.penalties >= 4,
+        );
         expect(anyMaxed || state.removedColors.size >= 2).toBe(true);
 
         // Invariants on every sheet.
@@ -83,7 +89,9 @@ describe("full game replay (integration)", () => {
             expect(row.crossedIndices.length).toBeLessThanOrEqual(11);
             const sorted = [...row.crossedIndices].sort((a, b) => a - b);
             expect(row.crossedIndices).toEqual(sorted);
-            expect(new Set(row.crossedIndices).size).toBe(row.crossedIndices.length);
+            expect(new Set(row.crossedIndices).size).toBe(
+              row.crossedIndices.length,
+            );
             if (row.locked) {
               expect(row.crossedIndices).toContain(10);
             }

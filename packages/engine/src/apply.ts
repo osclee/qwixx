@@ -14,7 +14,12 @@ import { scoreSheet } from "./score.js";
  * shared dice pool (`state.diceInPlay` / `state.removedColors`) is
  * deliberately left untouched until `resolveTurn` — see module doc there.
  */
-export function applyCross(state: GameState, playerId: string, color: Color, value: number): void {
+export function applyCross(
+  state: GameState,
+  playerId: string,
+  color: Color,
+  value: number,
+): void {
   const sheet = state.sheets[playerId];
   if (!sheet) throw new IllegalMoveError(`Unknown player ${playerId}`);
 
@@ -77,7 +82,9 @@ export function computeResults(state: GameState): PlayerResult[] {
     results.push({ ...s, rank });
   }
   // Return in seat order for stable client rendering; rank is what conveys placement.
-  return state.seatOrder.map((playerId) => results.find((r) => r.playerId === playerId) as PlayerResult);
+  return state.seatOrder.map(
+    (playerId) => results.find((r) => r.playerId === playerId) as PlayerResult,
+  );
 }
 
 /**
@@ -111,7 +118,9 @@ export function resolveTurn(state: GameState): void {
   }
   state.diceInPlay = new Set(COLORS.filter((c) => !state.removedColors.has(c)));
 
-  const anyPlayerMaxedPenalties = Object.values(state.sheets).some((s) => s.penalties >= 4);
+  const anyPlayerMaxedPenalties = Object.values(state.sheets).some(
+    (s) => s.penalties >= 4,
+  );
   const twoColorsRemoved = state.removedColors.size >= 2;
 
   if (anyPlayerMaxedPenalties || twoColorsRemoved) {
@@ -142,7 +151,9 @@ export function endGameNow(state: GameState): void {
 }
 
 /** True if the given player has no legal white move for the current sum — used to auto-pass. */
-export function mustAutoPassWhite(sheet: PlayerSheet, sumWhite: number): boolean {
+export function mustAutoPassWhite(
+  sheet: PlayerSheet,
+  sumWhite: number,
+): boolean {
   return !hasAnyLegalWhiteMove(sheet, sumWhite);
 }
-

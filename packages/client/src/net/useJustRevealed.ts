@@ -9,7 +9,11 @@ const DEFAULT_DURATION_MS = 1500;
  * "you rolled" reveal in RollModal and the fade-in of the dice tray for
  * everyone else.
  */
-export function useJustRevealed(phase: Phase, turnSeq: number, durationMs = DEFAULT_DURATION_MS): boolean {
+export function useJustRevealed(
+  phase: Phase,
+  turnSeq: number,
+  durationMs = DEFAULT_DURATION_MS,
+): boolean {
   const [revealing, setRevealing] = useState(false);
   const prevPhaseRef = useRef<Phase>(phase);
 
@@ -24,7 +28,7 @@ export function useJustRevealed(phase: Phase, turnSeq: number, durationMs = DEFA
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [phase, turnSeq]);
+  }, [phase, turnSeq, durationMs]);
 
   return revealing;
 }

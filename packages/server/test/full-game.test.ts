@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { startTestServer } from "./testServer.js";
 import { TestClient } from "./testClient.js";
+import type { SnapshotMessage } from "../src/protocol.js";
 
 describe("full game lifecycle over the WebSocket protocol", () => {
   let close: (() => Promise<void>) | null = null;
@@ -29,7 +30,9 @@ describe("full game lifecycle over the WebSocket protocol", () => {
     // (including when bob is the active player), and reading from a single
     // client's message queue avoids desyncing two independent cursors
     // against one shared, ordered stream of turns.
-    const aliceLobbySnap = await alice.waitForSnapshot((s) => s.sheets.length === 2);
+    const aliceLobbySnap = await alice.waitForSnapshot(
+      (s) => s.sheets.length === 2,
+    );
     expect(aliceLobbySnap.lobbyState).toBe("LOBBY");
     expect(aliceLobbySnap.hostPlayerId).toBe(aliceJoined.playerId);
 
@@ -52,7 +55,8 @@ describe("full game lifecycle over the WebSocket protocol", () => {
 
     const colorSnap = await alice.waitForSnapshot((s) => s.phase === "COLOR");
     const roll = colorSnap.roll;
-    const activeClient = turn1ActivePlayerId === aliceJoined.playerId ? alice : bob;
+    const activeClient =
+      turn1ActivePlayerId === aliceJoined.playerId ? alice : bob;
 
     // The active player takes one real, legal cross via the color combo so
     // we also exercise the success path (not just pass/error), using the
@@ -63,7 +67,12 @@ describe("full game lifecycle over the WebSocket protocol", () => {
     if (tookRealCross) {
       activeClient.send({
         type: "submit_color",
-        action: { kind: "cross", whiteDie: "w1", color: "red", value: comboValue },
+        action: {
+          kind: "cross",
+          whiteDie: "w1",
+          color: "red",
+          value: comboValue,
+        },
       });
     } else {
       activeClient.send({ type: "submit_color", action: { kind: "pass" } });
@@ -75,23 +84,30 @@ describe("full game lifecycle over the WebSocket protocol", () => {
     whiteSnap = await alice.waitForSnapshot((s) => s.phase === "WHITE");
     expect(whiteSnap.turnSeq).toBeGreaterThan(colorSnap.turnSeq - 1);
     if (tookRealCross) {
-      const activeSheet = whiteSnap.sheets.find((sh: any) => sh.playerId === turn1ActivePlayerId);
-      expect(activeSheet.rows.red.crossedValues).toContain(comboValue);
+      const activeSheet = whiteSnap.sheets.find(
+        (sh) => sh.playerId === turn1ActivePlayerId,
+      );
+      expect(activeSheet!.rows.red.crossedValues).toContain(comboValue);
     }
 
     // Drive the rest of the game to completion purely by passing everything.
     // With nobody ever crossing again, this deterministically ends via the
     // 4-penalty condition (§7a) within a handful of alternating turns.
-    const finalSnap = await runToFinish(alice, bob, aliceJoined.playerId, whiteSnap);
+    const finalSnap = await runToFinish(
+      alice,
+      bob,
+      aliceJoined.playerId,
+      whiteSnap,
+    );
 
     expect(finalSnap.lobbyState).toBe("FINISHED");
     expect(finalSnap.phase).toBe("FINISHED");
     expect(finalSnap.results).toHaveLength(2);
-    for (const result of finalSnap.results) {
+    for (const result of finalSnap.results!) {
       expect(typeof result.total).toBe("number");
       expect([1, 2]).toContain(result.rank);
     }
-    const anyMaxedPenalty = finalSnap.sheets.some((s: any) => s.penalties === 4);
+    const anyMaxedPenalty = finalSnap.sheets.some((s) => s.penalties === 4);
     const twoColorsRemoved = finalSnap.removedColors.length >= 2;
     expect(anyMaxedPenalty || twoColorsRemoved).toBe(true);
   });
@@ -104,7 +120,12 @@ describe("full game lifecycle over the WebSocket protocol", () => {
  * target, never awaited on, so the two clients' independent message cursors
  * can't drift apart.
  */
-async function runToFinish(alice: TestClient, bob: TestClient, alicePlayerId: string, firstWhiteSnapshot: any): Promise<any> {
+async function runToFinish(
+  alice: TestClient,
+  bob: TestClient,
+  alicePlayerId: string,
+  firstWhiteSnapshot: SnapshotMessage,
+): Promise<SnapshotMessage> {
   let whiteSnap = firstWhiteSnapshot;
   for (let turn = 0; turn < 60; turn++) {
     if (whiteSnap.phase === "FINISHED") return whiteSnap;
@@ -112,15 +133,22 @@ async function runToFinish(alice: TestClient, bob: TestClient, alicePlayerId: st
     alice.send({ type: "submit_white", action: { kind: "pass" } });
     bob.send({ type: "submit_white", action: { kind: "pass" } });
 
-    const colorOrFinished = await alice.waitFor(
-      (m) => m.type === "snapshot" && (m.phase === "COLOR" || m.phase === "FINISHED"),
-    );
+    const colorOrFinished = (await alice.waitFor(
+      (m) =>
+        m.type === "snapshot" &&
+        (m.phase === "COLOR" || m.phase === "FINISHED"),
+    )) as SnapshotMessage;
     if (colorOrFinished.phase === "FINISHED") return colorOrFinished;
 
-    const active = colorOrFinished.activePlayerId === alicePlayerId ? alice : bob;
+    const active =
+      colorOrFinished.activePlayerId === alicePlayerId ? alice : bob;
     active.send({ type: "submit_color", action: { kind: "pass" } });
 
-    whiteSnap = await alice.waitFor((m) => m.type === "snapshot" && (m.phase === "WHITE" || m.phase === "FINISHED"));
+    whiteSnap = (await alice.waitFor(
+      (m) =>
+        m.type === "snapshot" &&
+        (m.phase === "WHITE" || m.phase === "FINISHED"),
+    )) as SnapshotMessage;
   }
   throw new Error("Game did not finish within 60 turns");
 }

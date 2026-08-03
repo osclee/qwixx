@@ -24,12 +24,15 @@ export function Table({ conn, snapshot, you, events }: TableProps) {
   const isHost = snapshot.hostPlayerId === you;
   const youAnsweredWhite = snapshot.whiteSubmitted.includes(you);
   const isRolling = snapshot.phase === "ROLLING";
-  const activeNickname = snapshot.sheets.find((s) => s.playerId === snapshot.activePlayerId)?.nickname;
+  const activeNickname = snapshot.sheets.find(
+    (s) => s.playerId === snapshot.activePlayerId,
+  )?.nickname;
   const justRevealed = useJustRevealed(snapshot.phase, snapshot.turnSeq);
   const [gameOverDismissed, setGameOverDismissed] = useState(false);
 
   const colorCombos = useMemo(() => {
-    if (!ownSheet || snapshot.phase !== "COLOR" || !isActive || !snapshot.roll) return [];
+    if (!ownSheet || snapshot.phase !== "COLOR" || !isActive || !snapshot.roll)
+      return [];
     return legalColorCombos(ownSheet, snapshot.roll, snapshot.diceInPlay);
   }, [ownSheet, snapshot.phase, isActive, snapshot.roll, snapshot.diceInPlay]);
 
@@ -53,7 +56,14 @@ export function Table({ conn, snapshot, you, events }: TableProps) {
     }
 
     return map;
-  }, [ownSheet, snapshot.phase, snapshot.roll, youAnsweredWhite, isActive, colorCombos]);
+  }, [
+    ownSheet,
+    snapshot.phase,
+    snapshot.roll,
+    youAnsweredWhite,
+    isActive,
+    colorCombos,
+  ]);
 
   function handleCellClick(color: Color, value: number) {
     if (snapshot.phase === "WHITE" && !youAnsweredWhite) {
@@ -61,8 +71,16 @@ export function Table({ conn, snapshot, you, events }: TableProps) {
       return;
     }
     if (snapshot.phase === "COLOR" && isActive) {
-      const combo = colorCombos.find((c) => c.color === color && c.value === value);
-      if (combo) conn.submitColor({ kind: "cross", whiteDie: combo.whiteDie, color, value });
+      const combo = colorCombos.find(
+        (c) => c.color === color && c.value === value,
+      );
+      if (combo)
+        conn.submitColor({
+          kind: "cross",
+          whiteDie: combo.whiteDie,
+          color,
+          value,
+        });
     }
   }
 
@@ -77,7 +95,11 @@ export function Table({ conn, snapshot, you, events }: TableProps) {
         </div>
         <div className="table__header-actions">
           {snapshot.phase === "FINISHED" && gameOverDismissed && (
-            <button type="button" className="btn btn--ghost btn--small" onClick={() => setGameOverDismissed(false)}>
+            <button
+              type="button"
+              className="btn btn--ghost btn--small"
+              onClick={() => setGameOverDismissed(false)}
+            >
               View results
             </button>
           )}
@@ -86,7 +108,11 @@ export function Table({ conn, snapshot, you, events }: TableProps) {
               type="button"
               className="btn btn--ghost btn--small"
               onClick={() => {
-                if (window.confirm("End the game now for everyone? Sheets will be scored as they stand.")) {
+                if (
+                  window.confirm(
+                    "End the game now for everyone? Sheets will be scored as they stand.",
+                  )
+                ) {
                   conn.endGame();
                 }
               }}
@@ -94,28 +120,38 @@ export function Table({ conn, snapshot, you, events }: TableProps) {
               End game
             </button>
           )}
-          <button type="button" className="btn btn--ghost btn--small" onClick={() => conn.leaveTable()}>
+          <button
+            type="button"
+            className="btn btn--ghost btn--small"
+            onClick={() => conn.leaveTable()}
+          >
             Leave
           </button>
         </div>
       </header>
 
-      {isActive && (isRolling || justRevealed) && snapshot.phase !== "FINISHED" && (
-        <RollModal
-          waiting={isRolling}
-          revealing={justRevealed && !isRolling}
-          roll={snapshot.roll}
-          phaseDeadline={snapshot.phaseDeadline}
-          serverNow={snapshot.serverNow}
-          onRoll={() => conn.rollDice()}
-        />
-      )}
+      {isActive &&
+        (isRolling || justRevealed) &&
+        snapshot.phase !== "FINISHED" && (
+          <RollModal
+            waiting={isRolling}
+            revealing={justRevealed && !isRolling}
+            roll={snapshot.roll}
+            phaseDeadline={snapshot.phaseDeadline}
+            serverNow={snapshot.serverNow}
+            onRoll={() => conn.rollDice()}
+          />
+        )}
 
       {snapshot.phase !== "FINISHED" &&
         (isRolling ? (
-          <p className="dice-tray__waiting">{isActive ? "Your roll!" : `Waiting for ${activeNickname} to roll…`}</p>
+          <p className="dice-tray__waiting">
+            {isActive ? "Your roll!" : `Waiting for ${activeNickname} to roll…`}
+          </p>
         ) : (
-          <p className="dice-tray__rolled-by">{isActive ? "You rolled:" : `${activeNickname} rolled:`}</p>
+          <p className="dice-tray__rolled-by">
+            {isActive ? "You rolled:" : `${activeNickname} rolled:`}
+          </p>
         ))}
 
       <DiceTray
@@ -136,7 +172,13 @@ export function Table({ conn, snapshot, you, events }: TableProps) {
 
       <div className="table__body">
         <div className="table__own-sheet">
-          {ownSheet && <ScoreSheet sheet={ownSheet} legalValues={legalValues} onCellClick={handleCellClick} />}
+          {ownSheet && (
+            <ScoreSheet
+              sheet={ownSheet}
+              legalValues={legalValues}
+              onCellClick={handleCellClick}
+            />
+          )}
         </div>
 
         <div className="table__opponents">
@@ -148,15 +190,17 @@ export function Table({ conn, snapshot, you, events }: TableProps) {
         <EventLog events={events} />
       </div>
 
-      {snapshot.phase === "FINISHED" && snapshot.results && !gameOverDismissed && (
-        <GameOver
-          results={snapshot.results}
-          you={you}
-          isHost={snapshot.hostPlayerId === you}
-          onClose={() => setGameOverDismissed(true)}
-          onNewGame={() => conn.newGame()}
-        />
-      )}
+      {snapshot.phase === "FINISHED" &&
+        snapshot.results &&
+        !gameOverDismissed && (
+          <GameOver
+            results={snapshot.results}
+            you={you}
+            isHost={snapshot.hostPlayerId === you}
+            onClose={() => setGameOverDismissed(true)}
+            onNewGame={() => conn.newGame()}
+          />
+        )}
     </div>
   );
 }

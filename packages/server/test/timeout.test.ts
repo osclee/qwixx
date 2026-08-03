@@ -10,7 +10,11 @@ describe("phase timers", () => {
   });
 
   it("auto-passes both phases on timeout and penalizes the active player who never answered", async () => {
-    const server = await startTestServer({ seed: 7, whitePhaseMs: 150, colorPhaseMs: 150 });
+    const server = await startTestServer({
+      seed: 7,
+      whitePhaseMs: 150,
+      colorPhaseMs: 150,
+    });
     close = server.close;
 
     const alice = await TestClient.connect(server.url);
@@ -18,7 +22,11 @@ describe("phase timers", () => {
     const aliceJoined = await alice.waitForType("joined");
 
     const bob = await TestClient.connect(server.url);
-    bob.send({ type: "join_table", roomCode: aliceJoined.roomCode, nickname: "Bob" });
+    bob.send({
+      type: "join_table",
+      roomCode: aliceJoined.roomCode,
+      nickname: "Bob",
+    });
     await bob.waitForType("joined");
 
     await alice.waitForSnapshot((s) => s.sheets.length === 2);
@@ -31,14 +39,22 @@ describe("phase timers", () => {
     // Nobody sends anything at all. The white-phase timer (150ms) should
     // fire, auto-passing both players into COLOR; the color-phase timer
     // (150ms) should then fire too, auto-passing the active player.
-    const colorSnap = await alice.waitForSnapshot((s) => s.phase === "COLOR", 3000);
+    const colorSnap = await alice.waitForSnapshot(
+      (s) => s.phase === "COLOR",
+      3000,
+    );
     expect(colorSnap.activePlayerId).toBe(activePlayerId);
 
-    const whiteSnap2 = await alice.waitForSnapshot((s) => s.phase === "WHITE", 3000);
+    const whiteSnap2 = await alice.waitForSnapshot(
+      (s) => s.phase === "WHITE",
+      3000,
+    );
     expect(whiteSnap2.turnSeq).toBeGreaterThan(whiteSnap1.turnSeq);
 
-    const activeSheet = whiteSnap2.sheets.find((s: any) => s.playerId === activePlayerId);
-    expect(activeSheet.penalties).toBe(1);
+    const activeSheet = whiteSnap2.sheets.find(
+      (s) => s.playerId === activePlayerId,
+    );
+    expect(activeSheet!.penalties).toBe(1);
 
     // Active seat should have rotated to the other player for turn 2.
     expect(whiteSnap2.activePlayerId).not.toBe(activePlayerId);

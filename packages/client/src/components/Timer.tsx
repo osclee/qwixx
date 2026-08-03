@@ -19,7 +19,8 @@ export function Timer({ phaseDeadline, serverNow }: TimerProps) {
     // needs to be accurate, not clock sync.
     const totalDurationMs = phaseDeadline - serverNow;
     const startedAt = Date.now();
-    const tick = () => setRemainingMs(Math.max(0, totalDurationMs - (Date.now() - startedAt)));
+    const tick = () =>
+      setRemainingMs(Math.max(0, totalDurationMs - (Date.now() - startedAt)));
     tick();
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
@@ -27,5 +28,9 @@ export function Timer({ phaseDeadline, serverNow }: TimerProps) {
 
   if (remainingMs === null) return null;
   const seconds = Math.ceil(remainingMs / 1000);
-  return <span className={`timer ${seconds <= 10 ? "timer--low" : ""}`}>{seconds}s</span>;
+  return (
+    <span className={`timer ${seconds <= 10 ? "timer--low" : ""}`}>
+      {seconds}s
+    </span>
+  );
 }

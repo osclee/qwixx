@@ -21,7 +21,14 @@ interface RollModalProps {
  * turn over it, see table.ts beginRoll). Once rolled, shows the result
  * briefly before Table.tsx stops rendering this component.
  */
-export function RollModal({ waiting, revealing, roll, phaseDeadline, serverNow, onRoll }: RollModalProps) {
+export function RollModal({
+  waiting,
+  revealing,
+  roll,
+  phaseDeadline,
+  serverNow,
+  onRoll,
+}: RollModalProps) {
   const [clicked, setClicked] = useState(false);
 
   useEffect(() => {

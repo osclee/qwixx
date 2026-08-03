@@ -1,4 +1,9 @@
-import { applyCross, emptySheet, type Color, type PlayerSheet } from "@quixx/engine";
+import {
+  applyCross,
+  emptySheet,
+  type Color,
+  type PlayerSheet,
+} from "@quixx/engine";
 import { describe, expect, it } from "vitest";
 import { chooseColorMove, chooseWhiteMove } from "../src/bot.js";
 
@@ -8,7 +13,10 @@ import { chooseColorMove, chooseWhiteMove } from "../src/bot.js";
  * mirrors packages/engine/test/helpers.ts's sheetWithCrosses, extended to
  * cross multiple rows on the same sheet.
  */
-function buildSheet(playerId: string, crosses: [Color, number[]][]): PlayerSheet {
+function buildSheet(
+  playerId: string,
+  crosses: [Color, number[]][],
+): PlayerSheet {
   const sheet = emptySheet(playerId);
   const fakeState = {
     seatOrder: [playerId],
@@ -118,12 +126,20 @@ describe("chooseWhiteMove", () => {
       ]);
       expect(chooseWhiteMove(sheet, 12, "hard", () => 0)).toBeNull();
       // Medium has no such judgment -- it always takes an available lock.
-      expect(chooseWhiteMove(sheet, 12, "medium", () => 0)).toEqual({ color: "red", value: 12 });
+      expect(chooseWhiteMove(sheet, 12, "medium", () => 0)).toEqual({
+        color: "red",
+        value: 12,
+      });
     });
 
     it("still takes a lock when reaching it doesn't skip anything", () => {
-      const sheet = buildSheet("p1", [["red", [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]]); // 10 crosses, nothing skipped to reach 12
-      expect(chooseWhiteMove(sheet, 12, "hard", () => 0)).toEqual({ color: "red", value: 12 });
+      const sheet = buildSheet("p1", [
+        ["red", [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]],
+      ]); // 10 crosses, nothing skipped to reach 12
+      expect(chooseWhiteMove(sheet, 12, "hard", () => 0)).toEqual({
+        color: "red",
+        value: 12,
+      });
     });
 
     it("prefers a smaller, cheap-to-reach value over a costlier skip elsewhere", () => {
@@ -146,7 +162,9 @@ describe("chooseColorMove", () => {
     ]);
     const roll = { w1: 3, w2: 4, red: 2, yellow: 2, green: 2, blue: 2 };
     const diceInPlay = new Set<Color>(["red", "yellow", "green", "blue"]);
-    expect(chooseColorMove(sheet, roll, diceInPlay, "medium", () => 0, 2)).toBeNull();
+    expect(
+      chooseColorMove(sheet, roll, diceInPlay, "medium", () => 0, 2),
+    ).toBeNull();
   });
 
   it("applies the same skip-minimizing heuristic as white moves", () => {

@@ -18,7 +18,11 @@ describe("server-side move validation", () => {
     const aliceJoined = await alice.waitForType("joined");
 
     const bob = await TestClient.connect(server.url);
-    bob.send({ type: "join_table", roomCode: aliceJoined.roomCode, nickname: "Bob" });
+    bob.send({
+      type: "join_table",
+      roomCode: aliceJoined.roomCode,
+      nickname: "Bob",
+    });
     await bob.waitForType("joined");
 
     await alice.waitForSnapshot((s) => s.sheets.length === 2);
@@ -32,7 +36,10 @@ describe("server-side move validation", () => {
 
     // A value that doesn't match the actual white sum must be rejected.
     const bogusValue = sumWhite === 12 ? 2 : 12; // guaranteed different from sumWhite
-    active.send({ type: "submit_white", action: { kind: "cross", color: "red", value: bogusValue } });
+    active.send({
+      type: "submit_white",
+      action: { kind: "cross", color: "red", value: bogusValue },
+    });
     const err1 = await active.waitForType("error");
     expect(err1.code).toBe("submit_white_failed");
 
@@ -56,10 +63,16 @@ describe("server-side move validation", () => {
 
     // The active player's math must actually add up (server recomputes it,
     // never trusts the client-supplied `value`).
-    const bogusColorValue = (colorSnap.roll.w1 as number) + (colorSnap.roll.red as number) + 100;
+    const bogusColorValue =
+      (colorSnap.roll.w1 as number) + (colorSnap.roll.red as number) + 100;
     active.send({
       type: "submit_color",
-      action: { kind: "cross", whiteDie: "w1", color: "red", value: bogusColorValue },
+      action: {
+        kind: "cross",
+        whiteDie: "w1",
+        color: "red",
+        value: bogusColorValue,
+      },
     });
     const err4 = await active.waitForType("error");
     expect(err4.code).toBe("submit_color_failed");

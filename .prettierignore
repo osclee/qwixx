@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+package-lock.json
+
+# Pre-existing docs and CI config use their own conventions (CRLF line
+# endings in the workflow file, asterisk-style emphasis in the docs) —
+# left alone rather than bulk-reformatted when Prettier was introduced.
+*.md
+.github

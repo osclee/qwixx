@@ -20,13 +20,16 @@ import type {
   ErrorMessage,
   EventMessage,
   PublicResult,
-  PublicRowState,
   PublicSheet,
   ServerMessage,
   SnapshotMessage,
 } from "./protocol.js";
 import type { GameStore, StoredActiveTable } from "./store/index.js";
-import { deserializeGameState, serializeGameState, type SerializedGameState } from "./serialize.js";
+import {
+  deserializeGameState,
+  serializeGameState,
+  type SerializedGameState,
+} from "./serialize.js";
 
 export type { BotDifficulty } from "./bot.js";
 
@@ -134,7 +137,14 @@ export class Table {
     if (this.seats.length >= MAX_SEATS) return false;
     if (this.hasSeat(playerId)) return true;
 
-    this.seats.push({ playerId, nickname, connected: true, sessionToken, isBot: false, botDifficulty: null });
+    this.seats.push({
+      playerId,
+      nickname,
+      connected: true,
+      sessionToken,
+      isBot: false,
+      botDifficulty: null,
+    });
     if (this.hostId === null) this.hostId = playerId;
     this.persistTableMeta();
     // Notify everyone already at the table — the new seat's own socket isn't
@@ -152,13 +162,20 @@ export class Table {
    * below via the same submitRoll/submitWhite/submitColor entry points a
    * human's ws.ts handler calls.
    */
-  addBotSeat(requesterId: string, difficulty: BotDifficulty): { ok: true; playerId: string } | { ok: false; error: string } {
-    if (this.lobby !== "LOBBY") return { ok: false, error: "Game already started" };
-    if (requesterId !== this.hostId) return { ok: false, error: "Only the host can add a bot" };
-    if (this.seats.length >= MAX_SEATS) return { ok: false, error: "Table is full" };
+  addBotSeat(
+    requesterId: string,
+    difficulty: BotDifficulty,
+  ): { ok: true; playerId: string } | { ok: false; error: string } {
+    if (this.lobby !== "LOBBY")
+      return { ok: false, error: "Game already started" };
+    if (requesterId !== this.hostId)
+      return { ok: false, error: "Only the host can add a bot" };
+    if (this.seats.length >= MAX_SEATS)
+      return { ok: false, error: "Table is full" };
 
     const botNumber = this.seats.filter((s) => s.isBot).length + 1;
-    const difficultyLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+    const difficultyLabel =
+      difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
     const playerId = randomUUID();
     this.seats.push({
       playerId,
@@ -174,9 +191,14 @@ export class Table {
   }
 
   /** Removes a bot seat. Host-only, lobby-only, and only ever targets a bot seat (never a human). */
-  removeBotSeat(requesterId: string, botPlayerId: string): { ok: true } | { ok: false; error: string } {
-    if (this.lobby !== "LOBBY") return { ok: false, error: "Game already started" };
-    if (requesterId !== this.hostId) return { ok: false, error: "Only the host can remove a bot" };
+  removeBotSeat(
+    requesterId: string,
+    botPlayerId: string,
+  ): { ok: true } | { ok: false; error: string } {
+    if (this.lobby !== "LOBBY")
+      return { ok: false, error: "Game already started" };
+    if (requesterId !== this.hostId)
+      return { ok: false, error: "Only the host can remove a bot" };
     const seat = this.seats.find((s) => s.playerId === botPlayerId);
     if (!seat || !seat.isBot) return { ok: false, error: "No such bot" };
 
@@ -189,7 +211,10 @@ export class Table {
 
   /** All (playerId, sessionToken) pairs, used to rebuild the registry's session map after a restart. */
   listSessions(): { playerId: string; sessionToken: string }[] {
-    return this.seats.map((s) => ({ playerId: s.playerId, sessionToken: s.sessionToken }));
+    return this.seats.map((s) => ({
+      playerId: s.playerId,
+      sessionToken: s.sessionToken,
+    }));
   }
 
   /** Explicit leave request while still in the lobby: frees the seat entirely. */
@@ -256,8 +281,10 @@ export class Table {
   // ---------- Game start ----------
 
   startGame(requesterId: string): { ok: true } | { ok: false; error: string } {
-    if (this.lobby !== "LOBBY") return { ok: false, error: "Game already started" };
-    if (requesterId !== this.hostId) return { ok: false, error: "Only the host can start the game" };
+    if (this.lobby !== "LOBBY")
+      return { ok: false, error: "Game already started" };
+    if (requesterId !== this.hostId)
+      return { ok: false, error: "Only the host can start the game" };
     if (this.seats.length < MIN_SEATS) {
       return { ok: false, error: `Need at least ${MIN_SEATS} players` };
     }
@@ -268,7 +295,9 @@ export class Table {
     );
     this.state = createGame(order);
     this.lobby = "IN_PROGRESS";
-    this.logEvent(`Game started. ${this.nicknameOf(order[0] as string)} goes first.`);
+    this.logEvent(
+      `Game started. ${this.nicknameOf(order[0] as string)} goes first.`,
+    );
     this.beginRoll();
     return { ok: true };
   }
@@ -286,8 +315,10 @@ export class Table {
    * store-schema churn for that window.
    */
   newGame(requesterId: string): { ok: true } | { ok: false; error: string } {
-    if (this.lobby !== "FINISHED") return { ok: false, error: "Game is not over" };
-    if (requesterId !== this.hostId) return { ok: false, error: "Only the host can start a new game" };
+    if (this.lobby !== "FINISHED")
+      return { ok: false, error: "Game is not over" };
+    if (requesterId !== this.hostId)
+      return { ok: false, error: "Only the host can start a new game" };
 
     this.clearTimer();
     this.state = null;
@@ -305,15 +336,21 @@ export class Table {
    * so a server restart mid-way doesn't strand the table half-finished.
    */
   endGame(requesterId: string): { ok: true } | { ok: false; error: string } {
-    if (this.lobby !== "IN_PROGRESS") return { ok: false, error: "Game is not in progress" };
-    if (requesterId !== this.hostId) return { ok: false, error: "Only the host can end the game" };
+    if (this.lobby !== "IN_PROGRESS")
+      return { ok: false, error: "Game is not in progress" };
+    if (requesterId !== this.hostId)
+      return { ok: false, error: "Only the host can end the game" };
 
     this.clearTimer();
     const state = this.requireState();
     endGameNow(state);
     this.lobby = "FINISHED";
     this.phaseDeadline = null;
-    this.store.saveSnapshot(this.roomCode, state.turnSeq, JSON.stringify(serializeGameState(state)));
+    this.store.saveSnapshot(
+      this.roomCode,
+      state.turnSeq,
+      JSON.stringify(serializeGameState(state)),
+    );
     this.store.saveResults(this.roomCode, JSON.stringify(state.results));
     this.logEvent(`${this.nicknameOf(requesterId)} ended the game.`);
     this.broadcastSnapshot();
@@ -321,7 +358,9 @@ export class Table {
   }
 
   private nicknameOf(playerId: string): string {
-    return this.seats.find((s) => s.playerId === playerId)?.nickname ?? playerId;
+    return (
+      this.seats.find((s) => s.playerId === playerId)?.nickname ?? playerId
+    );
   }
 
   // ---------- Turn phase machine ----------
@@ -369,8 +408,10 @@ export class Table {
 
   submitRoll(playerId: string): { ok: true } | { ok: false; error: string } {
     const state = this.requireStateOrNull();
-    if (!state || state.phase !== "ROLLING") return { ok: false, error: "Not waiting to roll" };
-    if (playerId !== activePlayerId(state)) return { ok: false, error: "Only the active player may roll" };
+    if (!state || state.phase !== "ROLLING")
+      return { ok: false, error: "Not waiting to roll" };
+    if (playerId !== activePlayerId(state))
+      return { ok: false, error: "Only the active player may roll" };
     this.performRoll();
     return { ok: true };
   }
@@ -393,7 +434,8 @@ export class Table {
     }
 
     for (const seat of this.seats) {
-      if (!seat.isBot || state.pendingWhite[seat.playerId] !== undefined) continue;
+      if (!seat.isBot || state.pendingWhite[seat.playerId] !== undefined)
+        continue;
       const sheet = state.sheets[seat.playerId];
       if (!sheet) continue;
       // A null move here always means the bot itself chose to pass (hard
@@ -401,10 +443,19 @@ export class Table {
       // auto-passed by the loop above), so schedule an explicit pass rather
       // than silently doing nothing and leaving it to the slow
       // whitePhaseMs fallback.
-      const move = chooseWhiteMove(sheet, sumWhite, seat.botDifficulty ?? "easy", this.botRandom);
+      const move = chooseWhiteMove(
+        sheet,
+        sumWhite,
+        seat.botDifficulty ?? "easy",
+        this.botRandom,
+      );
       this.scheduleBotMove(() => {
         if (move) {
-          this.submitWhite(seat.playerId, { kind: "cross", color: move.color, value: move.value });
+          this.submitWhite(seat.playerId, {
+            kind: "cross",
+            color: move.color,
+            value: move.value,
+          });
         } else {
           this.submitWhite(seat.playerId, { kind: "pass" });
         }
@@ -418,7 +469,10 @@ export class Table {
 
     this.clearTimer();
     this.phaseDeadline = this.now() + this.whitePhaseMs;
-    this.phaseTimer = setTimeout(() => this.closeWhitePhase(), this.whitePhaseMs);
+    this.phaseTimer = setTimeout(
+      () => this.closeWhitePhase(),
+      this.whitePhaseMs,
+    );
     this.broadcastSnapshot();
   }
 
@@ -439,8 +493,10 @@ export class Table {
     action: { kind: "cross"; color: Color; value: number } | { kind: "pass" },
   ): { ok: true } | { ok: false; error: string } {
     const state = this.requireStateOrNull();
-    if (!state || state.phase !== "WHITE") return { ok: false, error: "Not in the white-dice phase" };
-    if (!this.hasSeat(playerId)) return { ok: false, error: "Not seated at this table" };
+    if (!state || state.phase !== "WHITE")
+      return { ok: false, error: "Not in the white-dice phase" };
+    if (!this.hasSeat(playerId))
+      return { ok: false, error: "Not seated at this table" };
     if (state.pendingWhite[playerId] !== undefined) {
       return { ok: false, error: "Already submitted this turn" };
     }
@@ -451,7 +507,10 @@ export class Table {
       const roll = state.roll;
       if (!roll) return { ok: false, error: "No active roll" };
       const sumWhite = roll.w1 + roll.w2;
-      if (action.value !== sumWhite || !canCross(sheet, action.color, action.value)) {
+      if (
+        action.value !== sumWhite ||
+        !canCross(sheet, action.color, action.value)
+      ) {
         return { ok: false, error: "Illegal move" };
       }
       // Apply (and broadcast) the cross immediately rather than deferring it
@@ -462,8 +521,14 @@ export class Table {
       // player (often the active one) also answered.
       applyCross(state, playerId, action.color, action.value);
       const seat = this.seats.find((s) => s.playerId === playerId);
-      this.logEvent(`${seat?.nickname ?? playerId} crossed ${action.value} in ${action.color} (white).`);
-      state.pendingWhite[playerId] = { type: "cross", color: action.color, value: action.value };
+      this.logEvent(
+        `${seat?.nickname ?? playerId} crossed ${action.value} in ${action.color} (white).`,
+      );
+      state.pendingWhite[playerId] = {
+        type: "cross",
+        color: action.color,
+        value: action.value,
+      };
     } else {
       state.pendingWhite[playerId] = { type: "pass" };
     }
@@ -494,7 +559,12 @@ export class Table {
     const sheet = state.sheets[active];
     const roll = state.roll;
 
-    if (!seat?.connected || !roll || !sheet || !hasAnyLegalColorMove(sheet, roll, state.diceInPlay)) {
+    if (
+      !seat?.connected ||
+      !roll ||
+      !sheet ||
+      !hasAnyLegalColorMove(sheet, roll, state.diceInPlay)
+    ) {
       // Broadcast the COLOR-phase snapshot before immediately closing it —
       // otherwise clients never see a "phase: COLOR" frame at all for a turn
       // where nobody has a legal color move, and the UI jumps straight from
@@ -512,11 +582,23 @@ export class Table {
       // an explicit pass rather than falling through to the slow
       // colorPhaseMs timer below, which exists for humans who might not
       // answer at all.
-      const move = chooseColorMove(sheet, roll, state.diceInPlay, seat.botDifficulty ?? "easy", this.botRandom, this.seats.length);
+      const move = chooseColorMove(
+        sheet,
+        roll,
+        state.diceInPlay,
+        seat.botDifficulty ?? "easy",
+        this.botRandom,
+        this.seats.length,
+      );
       this.phaseDeadline = null;
       this.scheduleBotMove(() => {
         if (move) {
-          this.submitColor(active, { kind: "cross", whiteDie: move.whiteDie, color: move.color, value: move.value });
+          this.submitColor(active, {
+            kind: "cross",
+            whiteDie: move.whiteDie,
+            color: move.color,
+            value: move.value,
+          });
         } else {
           this.submitColor(active, { kind: "pass" });
         }
@@ -527,7 +609,10 @@ export class Table {
 
     this.clearTimer();
     this.phaseDeadline = this.now() + this.colorPhaseMs;
-    this.phaseTimer = setTimeout(() => this.closeColorPhase(null), this.colorPhaseMs);
+    this.phaseTimer = setTimeout(
+      () => this.closeColorPhase(null),
+      this.colorPhaseMs,
+    );
     this.broadcastSnapshot();
   }
 
@@ -538,9 +623,11 @@ export class Table {
       | { kind: "pass" },
   ): { ok: true } | { ok: false; error: string } {
     const state = this.requireStateOrNull();
-    if (!state || state.phase !== "COLOR") return { ok: false, error: "Not in the color-dice phase" };
+    if (!state || state.phase !== "COLOR")
+      return { ok: false, error: "Not in the color-dice phase" };
     const active = activePlayerId(state);
-    if (playerId !== active) return { ok: false, error: "Only the active player may act now" };
+    if (playerId !== active)
+      return { ok: false, error: "Only the active player may act now" };
 
     if (action.kind === "cross") {
       const sheet = state.sheets[playerId];
@@ -573,7 +660,9 @@ export class Table {
       const seat = this.seats.find((s) => s.playerId === active);
       try {
         applyCross(state, active, cross.color, cross.value);
-        this.logEvent(`${seat?.nickname ?? active} crossed ${cross.value} in ${cross.color} (color).`);
+        this.logEvent(
+          `${seat?.nickname ?? active} crossed ${cross.value} in ${cross.color} (color).`,
+        );
       } catch (err) {
         if (!(err instanceof IllegalMoveError)) throw err;
       }
@@ -592,10 +681,16 @@ export class Table {
     resolveTurn(state);
 
     if ((state.sheets[activeBefore]?.penalties ?? 0) > penaltiesBefore) {
-      this.logEvent(`${seatBefore?.nickname ?? activeBefore} took a penalty (no cross this turn).`);
+      this.logEvent(
+        `${seatBefore?.nickname ?? activeBefore} took a penalty (no cross this turn).`,
+      );
     }
 
-    this.store.saveSnapshot(this.roomCode, state.turnSeq, JSON.stringify(serializeGameState(state)));
+    this.store.saveSnapshot(
+      this.roomCode,
+      state.turnSeq,
+      JSON.stringify(serializeGameState(state)),
+    );
 
     if (state.finished) {
       this.lobby = "FINISHED";
@@ -682,7 +777,9 @@ export class Table {
         (acc, color) => {
           const row = sheet?.rows[color];
           const rowValues = ROW_VALUE_TABLES[color];
-          const crossedValues = row ? row.crossedIndices.map((i) => rowValues[i] as number) : [];
+          const crossedValues = row
+            ? row.crossedIndices.map((i) => rowValues[i] as number)
+            : [];
           acc[color] = {
             crossedValues,
             lastCrossedIndex: row?.lastCrossedIndex ?? -1,
@@ -724,7 +821,9 @@ export class Table {
       lobbyState: this.lobby,
       phase: state?.phase ?? "LOBBY",
       activePlayerId: state ? activePlayerId(state) : null,
-      diceInPlay: state ? [...state.diceInPlay] : ["red", "yellow", "green", "blue"],
+      diceInPlay: state
+        ? [...state.diceInPlay]
+        : ["red", "yellow", "green", "blue"],
       removedColors: state ? [...state.removedColors] : [],
       roll: state?.roll ?? null,
       sheets,
@@ -768,7 +867,11 @@ export class Table {
    * auto-close immediately and the game would cascade to completion before
    * any client ever saw the restored state.
    */
-  static restore(roomCode: string, stored: StoredActiveTable, deps: TableDeps): Table {
+  static restore(
+    roomCode: string,
+    stored: StoredActiveTable,
+    deps: TableDeps,
+  ): Table {
     const table = new Table(roomCode, deps);
     table.seats = stored.seats.map((s) => ({
       playerId: s.playerId,
@@ -783,7 +886,9 @@ export class Table {
     table.hostId = stored.hostPlayerId;
     table.lobby = "IN_PROGRESS";
     table.createdAt = stored.createdAt;
-    table.state = deserializeGameState(JSON.parse(stored.stateJson) as SerializedGameState);
+    table.state = deserializeGameState(
+      JSON.parse(stored.stateJson) as SerializedGameState,
+    );
     // Stay paused until the first player reconnects (see attachConnection) —
     // otherwise every phase would auto-close immediately with zero seats
     // connected, and the whole game would cascade to completion before any

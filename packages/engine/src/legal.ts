@@ -8,7 +8,11 @@ import { MIN_CROSSES_FOR_TERMINAL, TERMINAL_INDEX } from "./types.js";
  * the client for optimistic highlighting — there is exactly one definition
  * of "legal" in the whole system.
  */
-export function canCross(sheet: PlayerSheet, color: Color, value: number): boolean {
+export function canCross(
+  sheet: PlayerSheet,
+  color: Color,
+  value: number,
+): boolean {
   const row = sheet.rows[color];
   if (row.locked) return false;
 
@@ -19,7 +23,10 @@ export function canCross(sheet: PlayerSheet, color: Color, value: number): boole
   if (i <= row.lastCrossedIndex) return false;
 
   // Terminal gate (§6): the terminal cell requires >=5 prior crosses in this row.
-  if (i === TERMINAL_INDEX && row.crossedIndices.length < MIN_CROSSES_FOR_TERMINAL) {
+  if (
+    i === TERMINAL_INDEX &&
+    row.crossedIndices.length < MIN_CROSSES_FOR_TERMINAL
+  ) {
     return false;
   }
 
@@ -37,7 +44,10 @@ export interface LegalWhiteMove {
 }
 
 /** All rows (any color) in which `sumWhite` is currently a legal cross for this sheet. */
-export function legalWhiteMoves(sheet: PlayerSheet, sumWhite: number): LegalWhiteMove[] {
+export function legalWhiteMoves(
+  sheet: PlayerSheet,
+  sumWhite: number,
+): LegalWhiteMove[] {
   const moves: LegalWhiteMove[] = [];
   for (const color of ["red", "yellow", "green", "blue"] as const) {
     if (canCross(sheet, color, sumWhite)) {
@@ -90,7 +100,10 @@ export function legalColorMoves(
 }
 
 /** Used for the "no legal move existed" penalty path (§4.4) and to auto-pass players. */
-export function hasAnyLegalWhiteMove(sheet: PlayerSheet, sumWhite: number): boolean {
+export function hasAnyLegalWhiteMove(
+  sheet: PlayerSheet,
+  sumWhite: number,
+): boolean {
   return legalWhiteMoves(sheet, sumWhite).length > 0;
 }
 

@@ -21,7 +21,10 @@ export function Die({ value, variant, faded }: DieProps) {
       {active ? (
         <span className="die__pips">
           {Array.from({ length: 9 }, (_, i) => i + 1).map((pos) => (
-            <span key={pos} className={`die__pip ${active.has(pos) ? "die__pip--on" : ""}`} />
+            <span
+              key={pos}
+              className={`die__pip ${active.has(pos) ? "die__pip--on" : ""}`}
+            />
           ))}
         </span>
       ) : (

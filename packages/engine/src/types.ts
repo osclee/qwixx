@@ -64,7 +64,8 @@ export interface DiceRoll {
 }
 
 /** A player's declared action during the WHITE phase. */
-export type WhiteAction = { type: "cross"; color: Color; value: number } | { type: "pass" };
+export type WhiteAction =
+  { type: "cross"; color: Color; value: number } | { type: "pass" };
 
 /** The active player's declared action during the COLOR phase. */
 export type ColorAction =

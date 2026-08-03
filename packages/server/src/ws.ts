@@ -3,6 +3,14 @@ import type { WebSocket } from "ws";
 import { clientMessageSchema } from "./protocol.js";
 import type { TableRegistry } from "./registry.js";
 import type { OutSocket, Table } from "./table.js";
+import { RateLimiter, type RateLimiterOptions } from "./rateLimiter.js";
+
+// Generous enough for legitimate rapid play (e.g. mashing roll/cross), tight
+// enough to blunt a misbehaving or malicious client spamming the socket.
+const DEFAULT_RATE_LIMIT: RateLimiterOptions = {
+  capacity: 20,
+  refillPerSecond: 10,
+};
 
 function socketAdapter(ws: WebSocket): OutSocket {
   return {
@@ -12,13 +20,21 @@ function socketAdapter(ws: WebSocket): OutSocket {
   };
 }
 
+export interface WebSocketRouteOptions {
+  rateLimit?: RateLimiterOptions;
+}
+
 export function registerWebSocketRoute(
   app: FastifyInstance,
   registry: TableRegistry,
+  opts: WebSocketRouteOptions = {},
 ): void {
+  const rateLimitOpts = opts.rateLimit ?? DEFAULT_RATE_LIMIT;
+
   app.get("/ws", { websocket: true }, (ws: WebSocket) => {
     let boundTable: Table | null = null;
     let boundPlayerId: string | null = null;
+    const limiter = new RateLimiter(rateLimitOpts);
 
     const bind = (table: Table, playerId: string) => {
       boundTable = table;
@@ -27,6 +43,17 @@ export function registerWebSocketRoute(
     };
 
     ws.on("message", (raw: Buffer | string) => {
+      if (!limiter.tryConsume()) {
+        ws.send(
+          JSON.stringify({
+            type: "error",
+            code: "rate_limited",
+            message: "Too many messages, slow down",
+          }),
+        );
+        return;
+      }
+
       let parsed: unknown;
       try {
         parsed = JSON.parse(raw.toString());

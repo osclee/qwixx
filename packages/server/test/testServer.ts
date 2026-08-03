@@ -2,6 +2,7 @@ import { seededDie } from "@quixx/engine";
 import { buildApp } from "../src/app.js";
 import { MemoryStore } from "../src/store/memory.js";
 import type { GameStore } from "../src/store/index.js";
+import type { RateLimiterOptions } from "../src/rateLimiter.js";
 import type { AddressInfo } from "node:net";
 
 export interface TestServerOptions {
@@ -12,6 +13,7 @@ export interface TestServerOptions {
   store?: GameStore;
   botMoveDelayMs?: { min: number; max: number };
   botRandom?: () => number;
+  rateLimit?: RateLimiterOptions;
 }
 
 export async function startTestServer(opts: TestServerOptions = {}) {
@@ -21,6 +23,7 @@ export async function startTestServer(opts: TestServerOptions = {}) {
   const { app, registry } = await buildApp({
     store,
     clientDist: null,
+    rateLimit: opts.rateLimit,
     makeTableDeps: () => ({
       rollOne: die,
       // Short by default so existing turn-by-turn tests that don't care

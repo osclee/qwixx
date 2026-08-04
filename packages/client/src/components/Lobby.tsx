@@ -11,9 +11,10 @@ interface LobbyProps {
   conn: GameConnection;
   status: ConnectionStatus;
   error: ErrorMessage | null;
+  onPlayLocal: () => void;
 }
 
-export function Lobby({ conn, status, error }: LobbyProps) {
+export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
   const [nickname, setNickname] = useState(getStoredNickname());
   const [roomCode, setRoomCode] = useState("");
   const [mode, setMode] = useState<"create" | "join">("create");
@@ -109,6 +110,17 @@ export function Lobby({ conn, status, error }: LobbyProps) {
         </form>
 
         {error && <p className="lobby__error">{error.message}</p>}
+
+        <div className="lobby__divider">
+          <span>or</span>
+        </div>
+        <button
+          type="button"
+          className="btn btn--ghost lobby__local-btn"
+          onClick={onPlayLocal}
+        >
+          🎮 Local multiplayer (pass &amp; play)
+        </button>
       </div>
     </div>
   );

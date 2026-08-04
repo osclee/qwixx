@@ -4,7 +4,8 @@ interface GameOverProps {
   results: PublicResult[];
   you: string;
   isHost: boolean;
-  roomCode: string;
+  /** Omitted for local (pass-and-play) games, which have no server-side history to link to. */
+  roomCode?: string;
   onClose: () => void;
   onNewGame: () => void;
 }
@@ -89,14 +90,16 @@ export function GameOver({
             Waiting for the host to start a new game…
           </p>
         )}
-        <a
-          className="game-over__history-link"
-          href={`/history/${roomCode}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          View full game history ↗
-        </a>
+        {roomCode && (
+          <a
+            className="game-over__history-link"
+            href={`/history/${roomCode}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View full game history ↗
+          </a>
+        )}
       </div>
     </div>
   );

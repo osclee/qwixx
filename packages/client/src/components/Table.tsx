@@ -195,7 +195,9 @@ export function Table({
             )}
           </div>
 
-          <ChatPanel conn={conn} messages={chatMessages} you={you} />
+          {!snapshot.daily && (
+            <ChatPanel conn={conn} messages={chatMessages} you={you} />
+          )}
         </div>
 
         <div className="table__column">

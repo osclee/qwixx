@@ -38,6 +38,7 @@ export function GameOver({
 }: GameOverProps) {
   const sorted = [...results].sort((a, b) => a.rank - b.rank);
   const dailyResult = daily?.result ?? null;
+  const ownScore = results.find((r) => r.playerId === you)?.total ?? 0;
   const [copied, setCopied] = useState(false);
 
   const shareText = useMemo(() => {
@@ -47,6 +48,7 @@ export function GameOver({
         dateKey: daily.dateKey,
         won: dailyResult.won,
         playerTurns: dailyResult.won ? dailyResult.playerTurns : null,
+        score: ownScore,
         rows: {
           red: ownSheet.rows.red,
           yellow: ownSheet.rows.yellow,
@@ -57,7 +59,7 @@ export function GameOver({
       },
       window.location.origin,
     );
-  }, [daily, dailyResult, ownSheet]);
+  }, [daily, dailyResult, ownSheet, ownScore]);
 
   async function handleCopy() {
     if (!shareText) return;
@@ -76,6 +78,7 @@ export function GameOver({
       dateKey: daily.dateKey,
       won: dailyResult.won,
       playerTurns: dailyResult.won ? dailyResult.playerTurns : null,
+      score: ownScore,
       playedAt: Date.now(),
       rows: {
         red: ownSheet.rows.red,
@@ -85,7 +88,7 @@ export function GameOver({
       },
       penalties: ownSheet.penalties,
     });
-  }, [daily, dailyResult, ownSheet]);
+  }, [daily, dailyResult, ownSheet, ownScore]);
 
   if (daily && dailyResult) {
     const history = getDailyHistory();

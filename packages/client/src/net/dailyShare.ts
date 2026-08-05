@@ -30,6 +30,7 @@ export interface DailyShareData {
   dateKey: string; // UTC "YYYY-MM-DD"
   won: boolean;
   playerTurns: number | null;
+  score: number;
   rows: Record<Color, DailyShareRow>;
   penalties: number;
 }
@@ -54,8 +55,8 @@ function rowLine(color: Color, row: DailyShareRow): string {
 
 export function buildShareText(data: DailyShareData, origin?: string): string {
   const headline = data.won
-    ? `🏆 Beat the bot in ${data.playerTurns} turn${data.playerTurns === 1 ? "" : "s"}!`
-    : "💀 Lost to the bot";
+    ? `🏆 Beat the bot in ${data.playerTurns} turn${data.playerTurns === 1 ? "" : "s"}! (${data.score} pts)`
+    : `💀 Lost to the bot (${data.score} pts)`;
 
   const lines = [
     `Qwixx Daily #${data.dateKey}`,

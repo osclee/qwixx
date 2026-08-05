@@ -1,5 +1,13 @@
 import type { SnapshotMessage } from "../net/protocol";
 import { Timer } from "./Timer";
+import {
+  DiceIcon,
+  FlagIcon,
+  HourglassIcon,
+  RefreshIcon,
+  SprayCanIcon,
+  WhiteDotIcon,
+} from "./Icons";
 
 interface TurnBarProps {
   snapshot: SnapshotMessage;
@@ -17,13 +25,16 @@ const PHASE_LABEL: Record<SnapshotMessage["phase"], string> = {
   FINISHED: "Game over",
 };
 
-const PHASE_ICON: Record<SnapshotMessage["phase"], string> = {
-  LOBBY: "⏳",
-  ROLLING: "🎲",
-  WHITE: "⚪",
-  COLOR: "🎨",
-  RESOLVE: "🔄",
-  FINISHED: "🏁",
+const PHASE_ICON: Record<
+  SnapshotMessage["phase"],
+  (props: { className?: string }) => JSX.Element
+> = {
+  LOBBY: HourglassIcon,
+  ROLLING: DiceIcon,
+  WHITE: WhiteDotIcon,
+  COLOR: SprayCanIcon,
+  RESOLVE: RefreshIcon,
+  FINISHED: FlagIcon,
 };
 
 export function TurnBar({
@@ -37,6 +48,7 @@ export function TurnBar({
   );
   const youAnsweredWhite = snapshot.whiteSubmitted.includes(you);
   const isActive = snapshot.activePlayerId === you;
+  const PhaseIcon = PHASE_ICON[snapshot.phase];
 
   return (
     <div className="turn-bar">
@@ -45,7 +57,7 @@ export function TurnBar({
           className={`turn-bar__phase turn-bar__phase--${snapshot.phase.toLowerCase()}`}
         >
           <span className="turn-bar__phase-icon" aria-hidden="true">
-            {PHASE_ICON[snapshot.phase]}
+            <PhaseIcon />
           </span>
           {PHASE_LABEL[snapshot.phase]}
         </span>

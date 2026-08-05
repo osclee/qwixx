@@ -1,32 +1,33 @@
 :root {
-  --bg: #14161d;
-  --bg-2: #1a1d26;
-  --panel: #1f232c;
-  --panel-2: #262b36;
-  --panel-3: #2c313d;
-  --text: #f1f3f8;
-  --text-dim: #949bab;
-  --border: #363c49;
+  --bg: #0a0e17;
+  --bg-2: #10131f;
+  --panel: #151a29;
+  --panel-2: #1b2032;
+  --panel-3: #232a40;
+  --text: #eef1fb;
+  --text-dim: #8b92ab;
+  --border: #313a56;
 
-  --red: #ef4444;
-  --red-dim: #4a2226;
-  --yellow: #f3b93a;
-  --yellow-dim: #4a3d18;
-  --green: #34b364;
-  --green-dim: #1c3f2b;
-  --blue: #3f8cf3;
-  --blue-dim: #1e3452;
+  --red: #ff3860;
+  --red-dim: #4a1120;
+  --yellow: #ffce3d;
+  --yellow-dim: #4a3a12;
+  --green: #2bdb7a;
+  --green-dim: #123a26;
+  --blue: #3d8bff;
+  --blue-dim: #162340;
 
-  --accent: #7dd3fc;
-  --accent-2: #a78bfa;
-  --gold: #f3c94d;
+  --accent: #33e0ff;
+  --accent-2: #ff2d9e;
+  --gold: #ffd93d;
 
-  --font-display: "Baloo 2", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-pixel: "Press Start 2P", "Chakra Petch", monospace;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
 
   color-scheme: dark;
 }
@@ -50,18 +51,43 @@ body {
   color: var(--text);
   background:
     radial-gradient(
-      ellipse 1200px 700px at 15% -10%,
-      rgba(125, 211, 252, 0.08),
-      transparent 60%
+      ellipse 1100px 650px at 12% -8%,
+      rgba(255, 45, 158, 0.1),
+      transparent 55%
     ),
     radial-gradient(
-      ellipse 1000px 600px at 100% 10%,
-      rgba(167, 139, 250, 0.07),
+      ellipse 1000px 600px at 100% 5%,
+      rgba(51, 224, 255, 0.09),
       transparent 55%
+    ),
+    radial-gradient(
+      ellipse 900px 500px at 50% 115%,
+      rgba(255, 217, 61, 0.05),
+      transparent 60%
     ),
     var(--bg);
   min-height: 100vh;
   min-height: 100dvh;
+  position: relative;
+}
+
+/* Faint CRT scanline texture over the whole app, like the marquee glow of a
+   night-city arcade cabinet. Fixed + pointer-events:none so it never affects
+   layout or interaction. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.025) 0px,
+    rgba(255, 255, 255, 0.025) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 999;
 }
 
 h1,
@@ -74,11 +100,38 @@ button {
   font-family: inherit;
 }
 
+/* ---------- Icon set (replaces emoji) ---------- */
+
+.icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
+}
+.icon--gold {
+  color: var(--gold);
+}
+.icon--silver {
+  color: #c7cdd9;
+}
+.icon--bronze {
+  color: #d68f52;
+}
+.icon--success {
+  color: var(--green);
+}
+.icon--fail {
+  color: var(--red);
+}
+
 .brand-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 2.1rem;
-  margin: 0 0 0.25rem;
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.35rem;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   -webkit-background-clip: text;
   background-clip: text;
@@ -86,10 +139,12 @@ button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  text-shadow: 0 0 18px rgba(255, 45, 158, 0.35);
 }
 .brand-title span {
   -webkit-text-fill-color: initial;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+  color: var(--accent-2);
+  filter: drop-shadow(0 0 6px rgba(255, 45, 158, 0.5));
 }
 
 .btn {
@@ -120,14 +175,14 @@ button {
   cursor: not-allowed;
 }
 .btn--primary {
-  background: linear-gradient(135deg, var(--accent), #5eb8e0);
-  color: #0b1520;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0a0e17;
   border-color: transparent;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(125, 211, 252, 0.25);
+  box-shadow: 0 4px 14px rgba(255, 45, 158, 0.28);
 }
 .btn--primary:hover:not(:disabled) {
-  box-shadow: 0 6px 18px rgba(125, 211, 252, 0.35);
+  box-shadow: 0 6px 20px rgba(255, 45, 158, 0.4);
 }
 .btn--ghost {
   background: transparent;
@@ -173,7 +228,7 @@ button {
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(125, 211, 252, 0.08),
+    rgba(51, 224, 255, 0.08),
     transparent 40%
   );
   pointer-events: none;
@@ -249,7 +304,7 @@ button {
 .lobby__form input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.15);
+  box-shadow: 0 0 0 3px rgba(51, 224, 255, 0.15);
 }
 
 .room-code-input {
@@ -280,7 +335,7 @@ button {
 .lobby__nickname input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.15);
+  box-shadow: 0 0 0 3px rgba(51, 224, 255, 0.15);
 }
 
 .lobby__daily {
@@ -405,7 +460,7 @@ button {
 }
 .badge--you {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #0b1520;
+  color: #0a0e17;
 }
 
 .waiting-room__waiting {
@@ -464,7 +519,8 @@ button {
 
 .table__logo {
   font-size: 1.4rem;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  color: var(--accent-2);
+  filter: drop-shadow(0 0 5px rgba(255, 45, 158, 0.5));
 }
 
 .table__room-code {
@@ -504,29 +560,41 @@ button {
   position: relative;
 }
 .die--white {
-  background: linear-gradient(160deg, #fdfdfd, #dcdde2);
-  color: #1b1d23;
-  border-color: #c9c9c9;
+  background: linear-gradient(160deg, #fdfdff, #d7dcec);
+  color: #0a0e17;
+  border-color: #b0b8d0;
 }
 .die--red {
-  background: linear-gradient(160deg, #f76a6a, var(--red));
-  border-color: #b22f2f;
+  background: linear-gradient(160deg, #ff7a9b, var(--red));
+  border-color: #8a1030;
   color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 10px rgba(255, 56, 96, 0.45);
 }
 .die--yellow {
-  background: linear-gradient(160deg, #ffd15c, var(--yellow));
-  border-color: #b9871f;
-  color: #1b1d23;
+  background: linear-gradient(160deg, #ffe17a, var(--yellow));
+  border-color: #9c7a12;
+  color: #0a0e17;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 10px rgba(255, 206, 61, 0.45);
 }
 .die--green {
-  background: linear-gradient(160deg, #57d182, var(--green));
-  border-color: #237a45;
-  color: #fff;
+  background: linear-gradient(160deg, #6cf0ab, var(--green));
+  border-color: #0f6b3d;
+  color: #06180f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 10px rgba(43, 219, 122, 0.45);
 }
 .die--blue {
-  background: linear-gradient(160deg, #6aabf8, var(--blue));
-  border-color: #2861ac;
+  background: linear-gradient(160deg, #7db4ff, var(--blue));
+  border-color: #1a4a99;
   color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 10px rgba(61, 139, 255, 0.45);
 }
 .die--removed {
   opacity: 0.28;
@@ -741,10 +809,10 @@ button {
 @keyframes timer-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 0 0 rgba(255, 56, 96, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 4px rgba(255, 56, 96, 0);
   }
 }
 
@@ -828,16 +896,16 @@ button {
   min-width: 0;
 }
 .row--red {
-  background: rgba(239, 68, 68, 0.05);
+  background: rgba(255, 56, 96, 0.05);
 }
 .row--yellow {
-  background: rgba(243, 185, 58, 0.05);
+  background: rgba(255, 206, 61, 0.05);
 }
 .row--green {
-  background: rgba(52, 179, 100, 0.05);
+  background: rgba(43, 219, 122, 0.05);
 }
 .row--blue {
-  background: rgba(63, 140, 243, 0.05);
+  background: rgba(61, 139, 255, 0.05);
 }
 
 .row__label {
@@ -925,20 +993,20 @@ button {
 }
 .row--red .cell--crossed {
   background: var(--red);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+  box-shadow: 0 2px 8px rgba(255, 56, 96, 0.35);
 }
 .row--yellow .cell--crossed {
   background: var(--yellow);
-  color: #1b1d23;
-  box-shadow: 0 2px 8px rgba(243, 185, 58, 0.35);
+  color: #0a0e17;
+  box-shadow: 0 2px 8px rgba(255, 206, 61, 0.35);
 }
 .row--green .cell--crossed {
   background: var(--green);
-  box-shadow: 0 2px 8px rgba(52, 179, 100, 0.35);
+  box-shadow: 0 2px 8px rgba(43, 219, 122, 0.35);
 }
 .row--blue .cell--crossed {
   background: var(--blue);
-  box-shadow: 0 2px 8px rgba(63, 140, 243, 0.35);
+  box-shadow: 0 2px 8px rgba(61, 139, 255, 0.35);
 }
 
 .cell--legal {
@@ -959,7 +1027,7 @@ button {
   50% {
     box-shadow:
       0 0 0 2px var(--accent),
-      0 0 10px 2px rgba(125, 211, 252, 0.55);
+      0 0 10px 2px rgba(51, 224, 255, 0.55);
   }
 }
 
@@ -1023,7 +1091,7 @@ button {
 .penalty-box--crossed {
   background: var(--red);
   border-color: var(--red);
-  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+  box-shadow: 0 2px 6px rgba(255, 56, 96, 0.35);
 }
 
 /* ---------- Event log ---------- */
@@ -1265,13 +1333,13 @@ button {
   font-size: 1.1rem;
 }
 .game-over__you {
-  background: rgba(125, 211, 252, 0.08);
+  background: rgba(51, 224, 255, 0.08);
 }
 .game-over__winner {
   background: linear-gradient(
     90deg,
-    rgba(243, 201, 77, 0.16),
-    rgba(243, 201, 77, 0.04)
+    rgba(255, 217, 61, 0.16),
+    rgba(255, 217, 61, 0.04)
   );
 }
 .game-over__winner td {
@@ -1372,8 +1440,8 @@ button {
 .game-history__winner {
   background: linear-gradient(
     90deg,
-    rgba(243, 201, 77, 0.16),
-    rgba(243, 201, 77, 0.04)
+    rgba(255, 217, 61, 0.16),
+    rgba(255, 217, 61, 0.04)
   );
 }
 .game-history__winner td {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { BotDifficulty, SnapshotMessage } from "../net/protocol";
 import type { GameConnection } from "../net/socket";
+import { DiceIcon } from "./Icons";
 
 const MAX_SEATS = 5;
 
@@ -28,7 +29,10 @@ export function WaitingRoom({ conn, snapshot, you }: WaitingRoomProps) {
     <div className="lobby">
       <div className="lobby__card">
         <h1 className="brand-title">
-          <span aria-hidden="true">🎲</span> Qwixx
+          <span aria-hidden="true">
+            <DiceIcon />
+          </span>{" "}
+          Qwixx
         </h1>
         <p className="waiting-room__room-code-label">Room code</p>
         <button

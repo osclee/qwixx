@@ -5,6 +5,7 @@ import type { LocalGameStore, LocalSnapshot } from "../local/localGame";
 import { ScoreSheet } from "./ScoreSheet";
 import { DiceTray } from "./DiceTray";
 import { GameOver } from "./GameOver";
+import { DiceIcon } from "./Icons";
 
 interface LocalTableProps {
   store: LocalGameStore;
@@ -96,7 +97,7 @@ export function LocalTable({ store, snapshot, onExit }: LocalTableProps) {
       <header className="table__header">
         <div className="table__brand">
           <span className="table__logo" aria-hidden="true">
-            🎲
+            <DiceIcon />
           </span>
           <span className="table__room-code">Local game</span>
         </div>

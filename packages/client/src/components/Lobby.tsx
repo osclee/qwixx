@@ -13,6 +13,14 @@ import {
   todayDateKey,
 } from "../net/daily";
 import { buildShareText, copyToClipboard } from "../net/dailyShare";
+import {
+  CalendarIcon,
+  ClipboardIcon,
+  ControllerIcon,
+  DiceIcon,
+  HandSignalIcon,
+  WalkSignalIcon,
+} from "./Icons";
 
 interface LobbyProps {
   conn: GameConnection;
@@ -87,7 +95,10 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
     <div className="lobby">
       <div className="lobby__card">
         <h1 className="brand-title">
-          <span aria-hidden="true">🎲</span> Qwixx
+          <span aria-hidden="true">
+            <DiceIcon />
+          </span>{" "}
+          Qwixx
         </h1>
         <p className="lobby__status">
           {status === "connecting" && "Connecting…"}
@@ -118,14 +129,22 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
 
         <div className="lobby__daily">
           <h2 className="lobby__daily-title">
-            <span aria-hidden="true">🗓️</span> Daily Challenge
+            <CalendarIcon /> Daily Challenge
           </h2>
           {todayResult ? (
             <div className="lobby__daily-done">
               <p>
-                {todayResult.won
-                  ? `✅ You beat today's bot in ${todayResult.playerTurns} turn${todayResult.playerTurns === 1 ? "" : "s"}!`
-                  : "❌ The bot won today's challenge."}
+                {todayResult.won ? (
+                  <>
+                    <WalkSignalIcon /> You beat today's bot in{" "}
+                    {todayResult.playerTurns} turn
+                    {todayResult.playerTurns === 1 ? "" : "s"}!
+                  </>
+                ) : (
+                  <>
+                    <HandSignalIcon /> The bot won today's challenge.
+                  </>
+                )}
               </p>
               <p className="lobby__daily-countdown">
                 Next challenge in {formatCountdown(msUntilNextUtcMidnight())}
@@ -135,7 +154,15 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
                 className="btn btn--ghost lobby__daily-btn"
                 onClick={copyTodayResult}
               >
-                {copied ? "✅ Copied!" : "📋 Copy score"}
+                {copied ? (
+                  <>
+                    <WalkSignalIcon /> Copied!
+                  </>
+                ) : (
+                  <>
+                    <ClipboardIcon /> Copy score
+                  </>
+                )}
               </button>
             </div>
           ) : (
@@ -218,7 +245,7 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
           className="btn btn--ghost lobby__local-btn"
           onClick={onPlayLocal}
         >
-          🎮 Local multiplayer (pass &amp; play)
+          <ControllerIcon /> Local multiplayer (pass &amp; play)
         </button>
       </div>
     </div>

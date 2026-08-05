@@ -1,5 +1,6 @@
 import type { Color, PublicSheet } from "../net/protocol";
 import { ROW_DISPLAY_VALUES, ROW_LABEL, ROW_ORDER } from "../rowLayout";
+import { LockIcon } from "./Icons";
 
 interface ScoreSheetProps {
   sheet: PublicSheet;
@@ -67,7 +68,7 @@ export function ScoreSheet({
                 className={`lock ${row.locked ? "lock--earned" : ""}`}
                 title="Lock"
               >
-                🔒
+                <LockIcon />
               </span>
             </div>
             <span className="row__score">{row.score}</span>

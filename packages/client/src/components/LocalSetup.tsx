@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { LOCAL_MAX_PLAYERS, LOCAL_MIN_PLAYERS } from "../local/localGame";
+import { CloseIcon, DiceIcon } from "./Icons";
 
 interface LocalSetupProps {
   onStart: (names: string[]) => void;
@@ -43,7 +44,10 @@ export function LocalSetup({ onStart, onBack }: LocalSetupProps) {
     <div className="lobby">
       <div className="lobby__card">
         <h1 className="brand-title">
-          <span aria-hidden="true">🎲</span> Qwixx
+          <span aria-hidden="true">
+            <DiceIcon />
+          </span>{" "}
+          Qwixx
         </h1>
         <p className="lobby__status">
           Local multiplayer — pass the device around the table
@@ -67,7 +71,7 @@ export function LocalSetup({ onStart, onBack }: LocalSetupProps) {
                     onClick={() => removePlayer(i)}
                     aria-label={`Remove player ${i + 1}`}
                   >
-                    ✕
+                    <CloseIcon />
                   </button>
                 )}
               </div>

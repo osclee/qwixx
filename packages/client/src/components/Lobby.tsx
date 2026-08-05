@@ -12,6 +12,7 @@ import {
   msUntilNextUtcMidnight,
   todayDateKey,
 } from "../net/daily";
+import { buildShareText, copyToClipboard } from "../net/dailyShare";
 
 interface LobbyProps {
   conn: GameConnection;
@@ -32,6 +33,7 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
   const [roomCode, setRoomCode] = useState("");
   const [mode, setMode] = useState<"create" | "join">("create");
   const [, setTick] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   // Re-render once a minute so the "next challenge in Xh Ym" countdown and
   // the day-rollover check (todayDateKey) stay live for a tab left open.
@@ -68,6 +70,17 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
     if (!canPlayDaily) return;
     setStoredNickname(trimmedNickname);
     conn.createDailyTable(trimmedNickname);
+  }
+
+  async function copyTodayResult() {
+    if (!todayResult) return;
+    const ok = await copyToClipboard(
+      buildShareText(todayResult, window.location.origin),
+    );
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   }
 
   return (
@@ -117,6 +130,13 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
               <p className="lobby__daily-countdown">
                 Next challenge in {formatCountdown(msUntilNextUtcMidnight())}
               </p>
+              <button
+                type="button"
+                className="btn btn--ghost lobby__daily-btn"
+                onClick={copyTodayResult}
+              >
+                {copied ? "✅ Copied!" : "📋 Copy score"}
+              </button>
             </div>
           ) : (
             <button

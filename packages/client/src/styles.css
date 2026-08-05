@@ -1182,6 +1182,29 @@ button {
   margin-top: 1rem;
 }
 
+.game-over__share-preview {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  margin: 1rem 0 0;
+  font-size: 1rem;
+  line-height: 1.35;
+  white-space: pre;
+  overflow-x: auto;
+  font-family: inherit;
+}
+
+.game-over__daily-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.game-over__daily-actions .btn {
+  flex: 1;
+  margin-top: 0;
+}
+
 .game-over__title {
   margin-top: 0;
   display: flex;

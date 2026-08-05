@@ -216,6 +216,7 @@ export function Table({
             results={snapshot.results}
             you={you}
             isHost={snapshot.hostPlayerId === you}
+            {...(ownSheet ? { ownSheet } : {})}
             {...(snapshot.daily
               ? { daily: snapshot.daily }
               : { roomCode: snapshot.roomCode })}

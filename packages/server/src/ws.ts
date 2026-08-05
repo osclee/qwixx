@@ -12,6 +12,18 @@ const DEFAULT_RATE_LIMIT: RateLimiterOptions = {
   refillPerSecond: 10,
 };
 
+// How often the server pings each connection and expects a pong back before
+// declaring it dead. There's no built-in dead-peer detection on either side
+// of a WebSocket -- a half-open connection (laptop sleep, network handoff,
+// an idle-connection reap by a proxy/load balancer in front of the server)
+// produces no 'close' event on its own, so a stuck game would otherwise
+// require the affected player to notice and refresh manually. Native ping
+// frames are answered automatically by the peer's WebSocket implementation
+// (per RFC 6455) without any application code on that end, so this alone is
+// enough to detect a dead connection from the server's side and unblock any
+// phase barrier that was waiting on it (see Table.detachConnection).
+const DEFAULT_HEARTBEAT_INTERVAL_MS = 20_000;
+
 function socketAdapter(ws: WebSocket): OutSocket {
   return {
     send(data: string) {
@@ -22,6 +34,8 @@ function socketAdapter(ws: WebSocket): OutSocket {
 
 export interface WebSocketRouteOptions {
   rateLimit?: RateLimiterOptions;
+  /** Overridable for tests; defaults to DEFAULT_HEARTBEAT_INTERVAL_MS. */
+  heartbeatIntervalMs?: number;
 }
 
 export function registerWebSocketRoute(
@@ -30,11 +44,36 @@ export function registerWebSocketRoute(
   opts: WebSocketRouteOptions = {},
 ): void {
   const rateLimitOpts = opts.rateLimit ?? DEFAULT_RATE_LIMIT;
+  const heartbeatIntervalMs =
+    opts.heartbeatIntervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS;
 
   app.get("/ws", { websocket: true }, (ws: WebSocket) => {
     let boundTable: Table | null = null;
     let boundPlayerId: string | null = null;
     const limiter = new RateLimiter(rateLimitOpts);
+
+    // Native ping/pong for server-side dead-peer detection, plus an
+    // application-level "ping" message on the same tick so the client can
+    // detect a dead connection on *its* side too (browsers auto-answer
+    // native ping frames without exposing that to page JS, so the client
+    // has no way to observe those directly -- see net/socket.ts).
+    let isAlive = true;
+    ws.on("pong", () => {
+      isAlive = true;
+    });
+    const heartbeat = setInterval(() => {
+      if (!isAlive) {
+        ws.terminate();
+        return;
+      }
+      isAlive = false;
+      ws.ping();
+      if (ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({ type: "ping" }));
+      }
+    }, heartbeatIntervalMs);
+    heartbeat.unref?.();
+    ws.on("close", () => clearInterval(heartbeat));
 
     const bind = (table: Table, playerId: string) => {
       boundTable = table;

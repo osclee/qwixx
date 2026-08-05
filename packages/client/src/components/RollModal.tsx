@@ -12,6 +12,8 @@ interface RollModalProps {
   roll: DiceRoll | null;
   phaseDeadline: number | null;
   serverNow: number;
+  /** True while the connection isn't open -- disables the roll button since nothing would reach the server. */
+  disabled?: boolean;
   onRoll: () => void;
 }
 
@@ -27,6 +29,7 @@ export function RollModal({
   roll,
   phaseDeadline,
   serverNow,
+  disabled,
   onRoll,
 }: RollModalProps) {
   const [clicked, setClicked] = useState(false);
@@ -45,7 +48,7 @@ export function RollModal({
             <button
               type="button"
               className="btn btn--primary roll-modal__button"
-              disabled={clicked}
+              disabled={clicked || disabled}
               onClick={() => {
                 setClicked(true);
                 onRoll();

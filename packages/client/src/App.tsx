@@ -60,6 +60,7 @@ export default function App() {
       you={state.playerId}
       events={state.events}
       chatMessages={state.chatMessages}
+      status={state.status}
     />
   );
 }

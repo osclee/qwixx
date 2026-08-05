@@ -213,12 +213,18 @@ export interface ErrorMessage {
   message: string;
 }
 
+/** Sent periodically to each connection as a liveness heartbeat -- see registerWebSocketRoute. */
+export interface PingMessage {
+  type: "ping";
+}
+
 export type ServerMessage =
   | SnapshotMessage
   | JoinedMessage
   | EventMessage
   | ChatMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | PingMessage;
 
 // Hand-maintained, since ServerMessage isn't zod-validated (the server never
 // validates its own outbound messages). Compared against the equivalent list
@@ -229,6 +235,7 @@ export const SERVER_MESSAGE_TYPES = [
   "event",
   "chat_broadcast",
   "error",
+  "ping",
 ] as const;
 
 type AssertNever<T extends never> = T;

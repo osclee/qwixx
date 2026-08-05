@@ -32,6 +32,14 @@ const MAX_EVENTS = 100;
 const MAX_CHAT_MESSAGES = 200;
 const RECONNECT_BASE_MS = 500;
 const RECONNECT_MAX_MS = 8000;
+// The server pings every connection (native ping + an app-level "ping"
+// message) on DEFAULT_HEARTBEAT_INTERVAL_MS (see server/src/ws.ts). If
+// nothing at all has arrived in this long, the connection is presumed dead
+// -- e.g. a half-open socket after the laptop slept or the network changed,
+// which produces no 'close' event on its own. Comfortably more than one
+// server heartbeat interval so ordinary jitter doesn't trip it.
+const WATCHDOG_STALE_MS = 45_000;
+const WATCHDOG_CHECK_MS = 5_000;
 
 function initialState(): ClientState {
   return {
@@ -58,8 +66,30 @@ export class GameConnection {
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private manualClose = false;
+  private lastMessageAt = Date.now();
 
-  constructor(private url: string) {}
+  constructor(private url: string) {
+    setInterval(() => this.checkWatchdog(), WATCHDOG_CHECK_MS);
+  }
+
+  /**
+   * Forces a reconnect if the socket claims to be open but nothing has come
+   * in (not even a heartbeat ping) for WATCHDOG_STALE_MS -- the client-side
+   * counterpart to the server's own dead-peer detection. Without this, a
+   * half-open connection just sits there looking "open" while every click
+   * silently vanishes (sendRaw no-ops unless readyState is OPEN, but a
+   * zombie socket can still report OPEN), and the player has no path back
+   * to a working game short of a manual refresh.
+   */
+  private checkWatchdog(): void {
+    if (
+      this.ws &&
+      this.state.status === "open" &&
+      Date.now() - this.lastMessageAt > WATCHDOG_STALE_MS
+    ) {
+      this.ws.close();
+    }
+  }
 
   getState(): ClientState {
     return this.state;
@@ -89,6 +119,7 @@ export class GameConnection {
 
     ws.addEventListener("open", () => {
       this.reconnectAttempts = 0;
+      this.lastMessageAt = Date.now();
       this.setState({ status: "open" });
       const token = getStoredSessionToken();
       if (token) {
@@ -97,6 +128,7 @@ export class GameConnection {
     });
 
     ws.addEventListener("message", (ev) => {
+      this.lastMessageAt = Date.now();
       let msg: ServerMessage;
       try {
         msg = JSON.parse(ev.data as string);
@@ -167,6 +199,10 @@ export class GameConnection {
       case "error": {
         if (msg.code === "rejoin_failed") clearStoredSessionToken();
         this.setState({ lastError: msg, errorSeq: this.state.errorSeq + 1 });
+        break;
+      }
+      case "ping": {
+        // No-op: receiving it at all is what resets the watchdog above.
         break;
       }
     }

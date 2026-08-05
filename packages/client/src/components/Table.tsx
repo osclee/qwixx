@@ -5,7 +5,7 @@ import type {
   EventMessage,
   SnapshotMessage,
 } from "../net/protocol";
-import type { GameConnection } from "../net/socket";
+import type { ConnectionStatus, GameConnection } from "../net/socket";
 import { legalColorCombos, legalWhiteRows } from "../net/legalMoves";
 import { useJustRevealed } from "../net/useJustRevealed";
 import { ScoreSheet } from "./ScoreSheet";
@@ -23,7 +23,14 @@ interface TableProps {
   you: string;
   events: EventMessage[];
   chatMessages: ChatMessage[];
+  status: ConnectionStatus;
 }
+
+const CONNECTION_BANNER_LABEL: Partial<Record<ConnectionStatus, string>> = {
+  connecting: "Connecting…",
+  reconnecting: "Reconnecting… your moves won't go through until this reconnects",
+  closed: "Disconnected — refresh to reconnect",
+};
 
 export function Table({
   conn,
@@ -31,7 +38,9 @@ export function Table({
   you,
   events,
   chatMessages,
+  status,
 }: TableProps) {
+  const connected = status === "open";
   const ownSheet = snapshot.sheets.find((s) => s.playerId === you);
   const opponents = snapshot.sheets.filter((s) => s.playerId !== you);
   const isActive = snapshot.activePlayerId === you;
@@ -51,7 +60,9 @@ export function Table({
   }, [ownSheet, snapshot.phase, isActive, snapshot.roll, snapshot.diceInPlay]);
 
   const legalValues = useMemo(() => {
-    if (!ownSheet) return {};
+    // No legal moves while disconnected -- nothing sent would reach the
+    // server anyway, so don't show cells as clickable.
+    if (!ownSheet || !connected) return {};
     const map: Partial<Record<Color, Set<number>>> = {};
 
     if (snapshot.phase === "WHITE" && !youAnsweredWhite && snapshot.roll) {
@@ -72,6 +83,7 @@ export function Table({
     return map;
   }, [
     ownSheet,
+    connected,
     snapshot.phase,
     snapshot.roll,
     youAnsweredWhite,
@@ -80,6 +92,7 @@ export function Table({
   ]);
 
   function handleCellClick(color: Color, value: number) {
+    if (!connected) return;
     if (snapshot.phase === "WHITE" && !youAnsweredWhite) {
       conn.submitWhite({ kind: "cross", color, value });
       return;
@@ -98,8 +111,15 @@ export function Table({
     }
   }
 
+  const bannerLabel = CONNECTION_BANNER_LABEL[status];
+
   return (
     <div className="table">
+      {bannerLabel && (
+        <div className="connection-banner" role="status">
+          {bannerLabel}
+        </div>
+      )}
       <header className="table__header">
         <div className="table__brand">
           <span className="table__logo" aria-hidden="true">
@@ -153,6 +173,7 @@ export function Table({
             roll={snapshot.roll}
             phaseDeadline={snapshot.phaseDeadline}
             serverNow={snapshot.serverNow}
+            disabled={!connected}
             onRoll={() => conn.rollDice()}
           />
         )}
@@ -179,6 +200,7 @@ export function Table({
         <TurnBar
           snapshot={snapshot}
           you={you}
+          disabled={!connected}
           onPassWhite={() => conn.submitWhite({ kind: "pass" })}
           onPassColor={() => conn.submitColor({ kind: "pass" })}
         />

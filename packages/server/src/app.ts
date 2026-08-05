@@ -7,6 +7,7 @@ import { tryCreateSqliteStore } from "./store/sqlite.js";
 import { TableRegistry } from "./registry.js";
 import { registerWebSocketRoute, type WebSocketRouteOptions } from "./ws.js";
 import { buildHistoryResponse } from "./history.js";
+import { buildDailyLeaderboardResponse } from "./dailyLeaderboard.js";
 import type { GameStore } from "./store/index.js";
 import type { TableDeps } from "./table.js";
 
@@ -60,6 +61,16 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<{
       return;
     }
     reply.send(buildHistoryResponse(history));
+  });
+
+  app.get("/api/daily/:dateKey/leaderboard", async (req, reply) => {
+    const { dateKey } = req.params as { dateKey: string };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+      reply.code(400).send({ error: "invalid_date_key" });
+      return;
+    }
+    const entries = store.getDailyLeaderboard(dateKey);
+    reply.send(buildDailyLeaderboardResponse(dateKey, entries));
   });
 
   if (opts.clientDist) {

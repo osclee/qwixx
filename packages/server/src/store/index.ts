@@ -30,6 +30,18 @@ export interface StoredGameHistory {
   results: PlayerResult[];
 }
 
+/** One completed Daily Challenge attempt, recorded for the cross-player leaderboard. */
+export interface StoredDailyResult {
+  dateKey: string; // UTC "YYYY-MM-DD"
+  nickname: string;
+  playerId: string;
+  won: boolean;
+  /** Number of the player's own turns it took to win; null for a loss. */
+  playerTurns: number | null;
+  total: number;
+  playedAt: number; // epoch ms
+}
+
 /**
  * Persistence boundary. `MemoryStore` is the always-available fallback;
  * `SqliteStore` adds durability across restarts. Both are swappable behind
@@ -46,5 +58,9 @@ export interface GameStore {
   /** Finished-table results for the history read-path, or null if unfinished/unknown. */
   getHistory(roomCode: string): StoredGameHistory | null;
   deleteTable(roomCode: string): void;
+  /** Records one finished Daily Challenge attempt (called at most once per table, at the finishing turn). */
+  saveDailyResult(entry: StoredDailyResult): void;
+  /** All attempts for a given UTC date, unsorted — ranking happens in dailyLeaderboard.ts. */
+  getDailyLeaderboard(dateKey: string): StoredDailyResult[];
   close(): void;
 }

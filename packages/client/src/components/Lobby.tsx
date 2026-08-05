@@ -13,6 +13,7 @@ import {
   todayDateKey,
 } from "../net/daily";
 import { buildShareText, copyToClipboard } from "../net/dailyShare";
+import { DailyLeaderboard } from "./DailyLeaderboard";
 
 interface LobbyProps {
   conn: GameConnection;
@@ -34,6 +35,7 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
   const [mode, setMode] = useState<"create" | "join">("create");
   const [, setTick] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // Re-render once a minute so the "next challenge in Xh Ym" countdown and
   // the day-rollover check (todayDateKey) stay live for a tab left open.
@@ -117,9 +119,18 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
         </label>
 
         <div className="lobby__daily">
-          <h2 className="lobby__daily-title">
-            <span aria-hidden="true">🗓️</span> Daily Challenge
-          </h2>
+          <div className="lobby__daily-header">
+            <h2 className="lobby__daily-title">
+              <span aria-hidden="true">🗓️</span> Daily Challenge
+            </h2>
+            <button
+              type="button"
+              className="btn btn--ghost btn--small"
+              onClick={() => setShowLeaderboard(true)}
+            >
+              🏆 Leaderboard
+            </button>
+          </div>
           {todayResult ? (
             <div className="lobby__daily-done">
               <p>
@@ -221,6 +232,12 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
           🎮 Local multiplayer (pass &amp; play)
         </button>
       </div>
+      {showLeaderboard && (
+        <DailyLeaderboard
+          dateKey={dateKey}
+          onClose={() => setShowLeaderboard(false)}
+        />
+      )}
     </div>
   );
 }

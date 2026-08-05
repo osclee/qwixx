@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { DailyStatus, PublicResult, PublicSheet } from "../net/protocol";
 import { getDailyHistory, saveDailyResult } from "../net/daily";
 import { buildShareText, copyToClipboard } from "../net/dailyShare";
+import { DailyLeaderboard } from "./DailyLeaderboard";
 
 interface GameOverProps {
   results: PublicResult[];
@@ -32,6 +33,7 @@ export function GameOver({
   const sorted = [...results].sort((a, b) => a.rank - b.rank);
   const dailyResult = daily?.result ?? null;
   const [copied, setCopied] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const shareText = useMemo(() => {
     if (!daily || !dailyResult || !ownSheet) return null;
@@ -165,6 +167,13 @@ export function GameOver({
             <button
               type="button"
               className="btn btn--ghost"
+              onClick={() => setShowLeaderboard(true)}
+            >
+              🏆 Leaderboard
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
               disabled={!shareText}
               onClick={handleCopy}
             >
@@ -179,6 +188,12 @@ export function GameOver({
             </button>
           </div>
         </div>
+        {showLeaderboard && (
+          <DailyLeaderboard
+            dateKey={daily.dateKey}
+            onClose={() => setShowLeaderboard(false)}
+          />
+        )}
       </div>
     );
   }

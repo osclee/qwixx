@@ -1,6 +1,7 @@
-import { useEffect } from "react";
-import type { DailyStatus, PublicResult } from "../net/protocol";
+import { useEffect, useMemo, useState } from "react";
+import type { DailyStatus, PublicResult, PublicSheet } from "../net/protocol";
 import { getDailyHistory, saveDailyResult } from "../net/daily";
+import { buildShareText, copyToClipboard } from "../net/dailyShare";
 
 interface GameOverProps {
   results: PublicResult[];
@@ -10,6 +11,8 @@ interface GameOverProps {
   roomCode?: string;
   /** Present for daily-challenge games; drives the headline, hides rematch/history-link, and records the result. */
   daily?: DailyStatus;
+  /** The player's own sheet — used to build the shareable emoji score for a daily challenge. */
+  ownSheet?: PublicSheet;
   onClose: () => void;
   onNewGame: () => void;
 }
@@ -22,23 +25,60 @@ export function GameOver({
   isHost,
   roomCode,
   daily,
+  ownSheet,
   onClose,
   onNewGame,
 }: GameOverProps) {
   const sorted = [...results].sort((a, b) => a.rank - b.rank);
   const dailyResult = daily?.result ?? null;
+  const [copied, setCopied] = useState(false);
+
+  const shareText = useMemo(() => {
+    if (!daily || !dailyResult || !ownSheet) return null;
+    return buildShareText(
+      {
+        dateKey: daily.dateKey,
+        won: dailyResult.won,
+        playerTurns: dailyResult.won ? dailyResult.playerTurns : null,
+        rows: {
+          red: ownSheet.rows.red,
+          yellow: ownSheet.rows.yellow,
+          green: ownSheet.rows.green,
+          blue: ownSheet.rows.blue,
+        },
+        penalties: ownSheet.penalties,
+      },
+      window.location.origin,
+    );
+  }, [daily, dailyResult, ownSheet]);
+
+  async function handleCopy() {
+    if (!shareText) return;
+    const ok = await copyToClipboard(shareText);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
 
   // Record the daily result to localStorage exactly once per finished game
   // (keyed by dateKey, so a re-render or reconnect never double-records).
   useEffect(() => {
-    if (!daily || !dailyResult) return;
+    if (!daily || !dailyResult || !ownSheet) return;
     saveDailyResult({
       dateKey: daily.dateKey,
       won: dailyResult.won,
       playerTurns: dailyResult.won ? dailyResult.playerTurns : null,
       playedAt: Date.now(),
+      rows: {
+        red: ownSheet.rows.red,
+        yellow: ownSheet.rows.yellow,
+        green: ownSheet.rows.green,
+        blue: ownSheet.rows.blue,
+      },
+      penalties: ownSheet.penalties,
     });
-  }, [daily, dailyResult]);
+  }, [daily, dailyResult, ownSheet]);
 
   if (daily && dailyResult) {
     const history = getDailyHistory();
@@ -103,6 +143,9 @@ export function GameOver({
               </tbody>
             </table>
           </div>
+          {shareText && (
+            <pre className="game-over__share-preview">{shareText}</pre>
+          )}
           {history.length > 0 && (
             <details className="lobby__daily-history game-over__daily-history">
               <summary>Score history ({history.length})</summary>
@@ -118,13 +161,23 @@ export function GameOver({
               </ul>
             </details>
           )}
-          <button
-            type="button"
-            className="btn btn--primary game-over__rematch"
-            onClick={onClose}
-          >
-            Done
-          </button>
+          <div className="game-over__daily-actions">
+            <button
+              type="button"
+              className="btn btn--ghost"
+              disabled={!shareText}
+              onClick={handleCopy}
+            >
+              {copied ? "✅ Copied!" : "📋 Copy score"}
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary game-over__rematch"
+              onClick={onClose}
+            >
+              Done
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -195,7 +195,9 @@ export function Table({
             )}
           </div>
 
-          <ChatPanel conn={conn} messages={chatMessages} you={you} />
+          {!snapshot.daily && (
+            <ChatPanel conn={conn} messages={chatMessages} you={you} />
+          )}
         </div>
 
         <div className="table__column">
@@ -216,6 +218,7 @@ export function Table({
             results={snapshot.results}
             you={you}
             isHost={snapshot.hostPlayerId === you}
+            {...(ownSheet ? { ownSheet } : {})}
             {...(snapshot.daily
               ? { daily: snapshot.daily }
               : { roomCode: snapshot.roomCode })}

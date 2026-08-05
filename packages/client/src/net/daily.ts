@@ -6,8 +6,15 @@
  * browser) resets them. Acceptable for a casual, no-accounts daily puzzle.
  */
 
+import type { Color } from "./protocol";
+
 const HISTORY_KEY = "quixx.daily.history";
 const MAX_HISTORY_ENTRIES = 365;
+
+export interface DailyHistoryRow {
+  crossedValues: number[];
+  locked: boolean;
+}
 
 export interface DailyHistoryEntry {
   dateKey: string; // UTC "YYYY-MM-DD"
@@ -15,6 +22,9 @@ export interface DailyHistoryEntry {
   /** Number of the player's own turns it took to win; null for a loss. */
   playerTurns: number | null;
   playedAt: number; // epoch ms, when the result was recorded
+  /** The player's own final sheet — kept so the share text can be rebuilt later (e.g. from the lobby, after the game-over screen is gone). */
+  rows: Record<Color, DailyHistoryRow>;
+  penalties: number;
 }
 
 /** Today's UTC date key — matches the server's `dailyDateKey` (packages/server/src/daily.ts). */

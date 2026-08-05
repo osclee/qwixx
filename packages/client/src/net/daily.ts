@@ -21,6 +21,7 @@ export interface DailyHistoryEntry {
   won: boolean;
   /** Number of the player's own turns it took to win; null for a loss. */
   playerTurns: number | null;
+  score: number;
   playedAt: number; // epoch ms, when the result was recorded
   /** The player's own final sheet — kept so the share text can be rebuilt later (e.g. from the lobby, after the game-over screen is gone). */
   rows: Record<Color, DailyHistoryRow>;

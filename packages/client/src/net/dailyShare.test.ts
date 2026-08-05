@@ -11,17 +11,18 @@ function emptyRows(): DailyShareData["rows"] {
 }
 
 describe("buildShareText", () => {
-  it("renders an all-empty grid and penalty row for a scoreless loss", () => {
+  it("renders an all-empty grid and penalty row for a shutout loss", () => {
     const text = buildShareText({
       dateKey: "2026-08-05",
       won: false,
       playerTurns: null,
+      score: 0,
       rows: emptyRows(),
       penalties: 4,
     });
     const lines = text.split("\n");
     expect(lines[0]).toBe("Qwixx Daily #2026-08-05");
-    expect(lines[1]).toBe("💀 Lost to the bot");
+    expect(lines[1]).toBe("💀 Lost to the bot (0 pts)");
     expect(lines[3]).toBe("⬜".repeat(11)); // red
     expect(lines[4]).toBe("⬜".repeat(11)); // yellow
     expect(lines[5]).toBe("⬜".repeat(11)); // green
@@ -29,11 +30,24 @@ describe("buildShareText", () => {
     expect(lines[7]).toBe("❌❌❌❌");
   });
 
+  it("still reports a non-zero score on a loss", () => {
+    const text = buildShareText({
+      dateKey: "2026-08-05",
+      won: false,
+      playerTurns: null,
+      score: 47,
+      rows: emptyRows(),
+      penalties: 2,
+    });
+    expect(text.split("\n")[1]).toBe("💀 Lost to the bot (47 pts)");
+  });
+
   it("marks crossed cells in the correct left-to-right position, respecting ascending vs descending rows", () => {
     const text = buildShareText({
       dateKey: "2026-08-05",
       won: true,
       playerTurns: 7,
+      score: 98,
       rows: {
         // red is ascending (2..12): crossing 2 and 4 should fill columns 0 and 2.
         red: { crossedValues: [2, 4], locked: false },
@@ -45,7 +59,7 @@ describe("buildShareText", () => {
       penalties: 1,
     });
     const lines = text.split("\n");
-    expect(lines[1]).toBe("🏆 Beat the bot in 7 turns!");
+    expect(lines[1]).toBe("🏆 Beat the bot in 7 turns! (98 pts)");
     expect(lines[3]).toBe("🟥⬜🟥⬜⬜⬜⬜⬜⬜⬜⬜"); // red: values 2,4 -> indices 0,2
     expect(lines[5]).toBe("🟩⬜🟩⬜⬜⬜⬜⬜⬜⬜⬜"); // green descending [12,11,10,...]: values 12,10 -> indices 0,2
     expect(lines[7]).toBe("❌⬜⬜⬜");
@@ -56,6 +70,7 @@ describe("buildShareText", () => {
       dateKey: "2026-08-05",
       won: true,
       playerTurns: 12,
+      score: 120,
       rows: {
         red: {
           crossedValues: [2, 3, 4, 5, 6, 12],
@@ -76,10 +91,11 @@ describe("buildShareText", () => {
       dateKey: "2026-08-05",
       won: true,
       playerTurns: 1,
+      score: 10,
       rows: emptyRows(),
       penalties: 0,
     });
-    expect(text.split("\n")[1]).toBe("🏆 Beat the bot in 1 turn!");
+    expect(text.split("\n")[1]).toBe("🏆 Beat the bot in 1 turn! (10 pts)");
   });
 
   it("appends the origin as a trailing line when provided", () => {
@@ -88,6 +104,7 @@ describe("buildShareText", () => {
         dateKey: "2026-08-05",
         won: false,
         playerTurns: null,
+        score: 0,
         rows: emptyRows(),
         penalties: 0,
       },
@@ -101,6 +118,7 @@ describe("buildShareText", () => {
       dateKey: "2026-08-05",
       won: false,
       playerTurns: null,
+      score: 0,
       rows: emptyRows(),
       penalties: 0,
     });

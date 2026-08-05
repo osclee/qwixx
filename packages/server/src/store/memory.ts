@@ -1,6 +1,7 @@
 import type {
   GameStore,
   StoredActiveTable,
+  StoredDailyResult,
   StoredGameHistory,
   StoredTable,
 } from "./index.js";
@@ -11,6 +12,7 @@ export class MemoryStore implements GameStore {
   private snapshots = new Map<string, { stateJson: string; turnSeq: number }>();
   private finished = new Set<string>();
   private results = new Map<string, string>();
+  private dailyResults: StoredDailyResult[] = [];
 
   saveTable(table: StoredTable): void {
     this.tables.set(table.roomCode, table);
@@ -54,6 +56,14 @@ export class MemoryStore implements GameStore {
     this.snapshots.delete(roomCode);
     this.finished.delete(roomCode);
     this.results.delete(roomCode);
+  }
+
+  saveDailyResult(entry: StoredDailyResult): void {
+    this.dailyResults.push(entry);
+  }
+
+  getDailyLeaderboard(dateKey: string): StoredDailyResult[] {
+    return this.dailyResults.filter((e) => e.dateKey === dateKey);
   }
 
   close(): void {

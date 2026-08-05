@@ -409,6 +409,7 @@ export class Table {
       JSON.stringify(serializeGameState(state)),
     );
     this.store.saveResults(this.roomCode, JSON.stringify(state.results));
+    this.recordDailyResultIfApplicable();
     this.logEvent(`${this.nicknameOf(requesterId)} ended the game.`);
     this.broadcastSnapshot();
     return { ok: true };
@@ -784,12 +785,39 @@ export class Table {
       this.lobby = "FINISHED";
       this.phaseDeadline = null;
       this.store.saveResults(this.roomCode, JSON.stringify(state.results));
+      this.recordDailyResultIfApplicable();
       this.logEvent("Game over.");
       this.broadcastSnapshot();
       return;
     }
 
     this.beginRoll();
+  }
+
+  /**
+   * Records this table's Daily Challenge attempt to the cross-player
+   * leaderboard, if it is one. Called from both finish paths (the normal
+   * end-of-turn resolution and a host-forced `endGame`) right after
+   * `store.saveResults` — each only ever runs once per table (a table can't
+   * finish twice), so this can't double-record.
+   */
+  private recordDailyResultIfApplicable(): void {
+    if (!this.daily) return;
+    const status = this.computeDailyStatus();
+    if (!status?.result) return;
+    const { humanPlayerId } = this.daily;
+    const total =
+      this.state?.results?.find((r) => r.playerId === humanPlayerId)?.total ??
+      0;
+    this.store.saveDailyResult({
+      dateKey: status.dateKey,
+      nickname: this.nicknameOf(humanPlayerId),
+      playerId: humanPlayerId,
+      won: status.result.won,
+      playerTurns: status.result.won ? status.result.playerTurns : null,
+      total,
+      playedAt: this.now(),
+    });
   }
 
   private clearTimer(): void {

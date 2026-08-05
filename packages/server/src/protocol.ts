@@ -153,6 +153,21 @@ export interface GameHistoryResponse {
   results: PublicResult[];
 }
 
+export interface DailyLeaderboardEntry {
+  rank: number; // 1 = fewest turns; ties share a rank
+  nickname: string;
+  playerTurns: number;
+  playedAt: number; // epoch ms
+}
+
+/** Response body for GET /api/daily/:dateKey/leaderboard (not a WS message). */
+export interface DailyLeaderboardResponse {
+  dateKey: string;
+  winners: DailyLeaderboardEntry[];
+  totalPlayers: number;
+  totalWinners: number;
+}
+
 /** Present only on tables created via `create_daily_table`; `result` fills in once the game finishes. */
 export interface DailyStatus {
   dateKey: string; // UTC "YYYY-MM-DD" identifying which day's challenge this is

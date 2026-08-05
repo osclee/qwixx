@@ -2,6 +2,7 @@ import type BetterSqlite3 from "better-sqlite3";
 import type {
   GameStore,
   StoredActiveTable,
+  StoredDailyResult,
   StoredGameHistory,
   StoredTable,
 } from "./index.js";
@@ -36,6 +37,17 @@ export class SqliteStore implements GameStore {
         finished INTEGER NOT NULL DEFAULT 0,
         results_json TEXT
       );
+      CREATE TABLE IF NOT EXISTS daily_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date_key TEXT NOT NULL,
+        nickname TEXT NOT NULL,
+        player_id TEXT NOT NULL,
+        won INTEGER NOT NULL,
+        player_turns INTEGER,
+        total INTEGER NOT NULL,
+        played_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_daily_results_date_key ON daily_results(date_key);
     `);
   }
 
@@ -121,6 +133,51 @@ export class SqliteStore implements GameStore {
   deleteTable(roomCode: string): void {
     if (this.closed) return;
     this.db.prepare(`DELETE FROM tables WHERE room_code = ?`).run(roomCode);
+  }
+
+  saveDailyResult(entry: StoredDailyResult): void {
+    if (this.closed) return;
+    this.db
+      .prepare(
+        `INSERT INTO daily_results (date_key, nickname, player_id, won, player_turns, total, played_at)
+         VALUES (@dateKey, @nickname, @playerId, @won, @playerTurns, @total, @playedAt)`,
+      )
+      .run({
+        dateKey: entry.dateKey,
+        nickname: entry.nickname,
+        playerId: entry.playerId,
+        won: entry.won ? 1 : 0,
+        playerTurns: entry.playerTurns,
+        total: entry.total,
+        playedAt: entry.playedAt,
+      });
+  }
+
+  getDailyLeaderboard(dateKey: string): StoredDailyResult[] {
+    const rows = this.db
+      .prepare(
+        `SELECT date_key, nickname, player_id, won, player_turns, total, played_at
+         FROM daily_results WHERE date_key = ?`,
+      )
+      .all(dateKey) as Array<{
+      date_key: string;
+      nickname: string;
+      player_id: string;
+      won: number;
+      player_turns: number | null;
+      total: number;
+      played_at: number;
+    }>;
+
+    return rows.map((r) => ({
+      dateKey: r.date_key,
+      nickname: r.nickname,
+      playerId: r.player_id,
+      won: r.won === 1,
+      playerTurns: r.player_turns,
+      total: r.total,
+      playedAt: r.played_at,
+    }));
   }
 
   close(): void {

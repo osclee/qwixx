@@ -21,6 +21,8 @@ export interface BuildAppOptions {
   logger?: boolean;
   /** Per-connection inbound WS message throttle. Omit for the production default. */
   rateLimit?: WebSocketRouteOptions["rateLimit"];
+  /** Per-connection liveness ping interval. Omit for the production default. */
+  heartbeatIntervalMs?: WebSocketRouteOptions["heartbeatIntervalMs"];
 }
 
 export async function buildApp(opts: BuildAppOptions = {}): Promise<{
@@ -44,11 +46,12 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<{
   registry.restoreFromStore();
 
   await app.register(fastifyWebsocket);
-  registerWebSocketRoute(
-    app,
-    registry,
-    opts.rateLimit ? { rateLimit: opts.rateLimit } : {},
-  );
+  registerWebSocketRoute(app, registry, {
+    ...(opts.rateLimit ? { rateLimit: opts.rateLimit } : {}),
+    ...(opts.heartbeatIntervalMs !== undefined
+      ? { heartbeatIntervalMs: opts.heartbeatIntervalMs }
+      : {}),
+  });
 
   app.get("/api/health", async () => ({ ok: true }));
 

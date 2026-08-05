@@ -107,12 +107,18 @@ export interface ErrorMessage {
   message: string;
 }
 
+/** Sent periodically as a liveness heartbeat -- see packages/server/src/ws.ts. */
+export interface PingMessage {
+  type: "ping";
+}
+
 export type ServerMessage =
   | SnapshotMessage
   | JoinedMessage
   | EventMessage
   | ChatMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | PingMessage;
 
 export type WhiteActionInput =
   { kind: "cross"; color: Color; value: number } | { kind: "pass" };
@@ -165,6 +171,7 @@ export const SERVER_MESSAGE_TYPES = [
   "event",
   "chat_broadcast",
   "error",
+  "ping",
 ] as const;
 
 type AssertNever<T extends never> = T;

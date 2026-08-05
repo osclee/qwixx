@@ -14,6 +14,7 @@ export interface TestServerOptions {
   botMoveDelayMs?: { min: number; max: number };
   botRandom?: () => number;
   rateLimit?: RateLimiterOptions;
+  heartbeatIntervalMs?: number;
 }
 
 export async function startTestServer(opts: TestServerOptions = {}) {
@@ -24,6 +25,7 @@ export async function startTestServer(opts: TestServerOptions = {}) {
     store,
     clientDist: null,
     rateLimit: opts.rateLimit,
+    heartbeatIntervalMs: opts.heartbeatIntervalMs,
     makeTableDeps: () => ({
       rollOne: die,
       // Short by default so existing turn-by-turn tests that don't care

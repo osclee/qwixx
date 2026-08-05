@@ -12,6 +12,8 @@ import {
 interface TurnBarProps {
   snapshot: SnapshotMessage;
   you: string;
+  /** True while the connection isn't open -- disables the pass buttons since nothing would reach the server. */
+  disabled?: boolean;
   onPassWhite: () => void;
   onPassColor: () => void;
 }
@@ -40,6 +42,7 @@ const PHASE_ICON: Record<
 export function TurnBar({
   snapshot,
   you,
+  disabled,
   onPassWhite,
   onPassColor,
 }: TurnBarProps) {
@@ -74,12 +77,22 @@ export function TurnBar({
       </div>
       <div className="turn-bar__actions">
         {snapshot.phase === "WHITE" && !youAnsweredWhite && (
-          <button type="button" className="btn btn--pass" onClick={onPassWhite}>
+          <button
+            type="button"
+            className="btn btn--pass"
+            disabled={disabled}
+            onClick={onPassWhite}
+          >
             Pass white sum
           </button>
         )}
         {snapshot.phase === "COLOR" && isActive && (
-          <button type="button" className="btn btn--pass" onClick={onPassColor}>
+          <button
+            type="button"
+            className="btn btn--pass"
+            disabled={disabled}
+            onClick={onPassColor}
+          >
             Pass color combo
           </button>
         )}

@@ -511,6 +511,17 @@ button {
   gap: 0.5rem;
 }
 
+.connection-banner {
+  background: var(--yellow-dim);
+  color: var(--yellow);
+  border: 1px solid var(--yellow);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
 .table__brand {
   display: flex;
   align-items: center;

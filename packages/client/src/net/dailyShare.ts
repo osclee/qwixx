@@ -1,11 +1,13 @@
-import { rowValues } from "@quixx/engine";
 import type { Color } from "./protocol";
 
 /**
  * Wordle-style shareable score text for a finished Daily Challenge: a
- * result headline plus an emoji grid mirroring the player's own sheet
- * (mirrors Wordle's spirit of "show the shape of your result, not the
- * answer" — friends can compare grids without it spoiling the day's dice).
+ * result headline plus one line per color, each a short progress summary
+ * (crossed count out of 11, plus a lock icon if the row was locked). This
+ * mirrors Wordle's spirit of "show the shape of your result, not the
+ * answer" while keeping every line short — a full 11-cell emoji grid per
+ * row wraps unpredictably in narrow chat-app message bubbles, which is
+ * exactly the "distracting on small screens" problem this format avoids.
  */
 
 const ROW_LENGTH = 11;
@@ -35,22 +37,9 @@ export interface DailyShareData {
   penalties: number;
 }
 
-/** One row's 11-cell strip: a filled square per crossed value, 🔒 on the terminal cell if locked. */
-function rowLine(color: Color, row: DailyShareRow): string {
-  const values = rowValues(color);
-  const crossed = new Set(row.crossedValues);
-  let line = "";
-  for (let i = 0; i < ROW_LENGTH; i++) {
-    const isTerminal = i === ROW_LENGTH - 1;
-    if (isTerminal && row.locked) {
-      line += LOCKED;
-    } else if (crossed.has(values[i] as number)) {
-      line += ROW_EMOJI[color];
-    } else {
-      line += EMPTY;
-    }
-  }
-  return line;
+/** e.g. "🟥7/11🔒" — crossed count out of 11, plus a lock icon if the row was locked. */
+function rowSummary(color: Color, row: DailyShareRow): string {
+  return `${ROW_EMOJI[color]}${row.crossedValues.length}/${ROW_LENGTH}${row.locked ? LOCKED : ""}`;
 }
 
 export function buildShareText(data: DailyShareData, origin?: string): string {
@@ -62,7 +51,7 @@ export function buildShareText(data: DailyShareData, origin?: string): string {
     `Qwixx Daily #${data.dateKey}`,
     headline,
     "",
-    ...COLORS.map((c) => rowLine(c, data.rows[c])),
+    ...COLORS.map((c) => rowSummary(c, data.rows[c])),
     PENALTY_TAKEN.repeat(data.penalties) + EMPTY.repeat(PENALTY_SLOTS - data.penalties),
   ];
   if (origin) lines.push("", origin);

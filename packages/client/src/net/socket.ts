@@ -182,6 +182,10 @@ export class GameConnection {
     this.sendRaw({ type: "create_table", nickname });
   }
 
+  createDailyTable(nickname: string): void {
+    this.sendRaw({ type: "create_daily_table", nickname });
+  }
+
   joinTable(roomCode: string, nickname: string): void {
     this.sendRaw({
       type: "join_table",

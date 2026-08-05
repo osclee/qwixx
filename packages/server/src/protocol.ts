@@ -16,6 +16,11 @@ export const createTableMsg = z.object({
   nickname: z.string().trim().min(1).max(20),
 });
 
+export const createDailyTableMsg = z.object({
+  type: z.literal("create_daily_table"),
+  nickname: z.string().trim().min(1).max(20),
+});
+
 export const joinTableMsg = z.object({
   type: z.literal("join_table"),
   roomCode: z.string().trim().min(4).max(8),
@@ -89,6 +94,7 @@ export const chatMessageMsg = z.object({
 
 export const clientMessageSchema = z.discriminatedUnion("type", [
   createTableMsg,
+  createDailyTableMsg,
   joinTableMsg,
   rejoinMsg,
   startGameMsg,
@@ -147,6 +153,12 @@ export interface GameHistoryResponse {
   results: PublicResult[];
 }
 
+/** Present only on tables created via `create_daily_table`; `result` fills in once the game finishes. */
+export interface DailyStatus {
+  dateKey: string; // UTC "YYYY-MM-DD" identifying which day's challenge this is
+  result: { won: boolean; playerTurns: number } | null;
+}
+
 export interface SnapshotMessage {
   type: "snapshot";
   roomCode: string;
@@ -171,6 +183,7 @@ export interface SnapshotMessage {
   serverNow: number; // epoch ms, for client clock-skew correction
   results: PublicResult[] | null;
   whiteSubmitted: string[]; // playerIds who have answered this WHITE phase
+  daily: DailyStatus | null;
 }
 
 export interface JoinedMessage {

@@ -45,6 +45,12 @@ export interface GameHistoryResponse {
   results: PublicResult[];
 }
 
+/** Present only on tables created via `create_daily_table`; `result` fills in once the game finishes. */
+export interface DailyStatus {
+  dateKey: string; // UTC "YYYY-MM-DD" identifying which day's challenge this is
+  result: { won: boolean; playerTurns: number } | null;
+}
+
 export interface DiceRoll {
   w1: number;
   w2: number;
@@ -71,6 +77,7 @@ export interface SnapshotMessage {
   serverNow: number;
   results: PublicResult[] | null;
   whiteSubmitted: string[];
+  daily: DailyStatus | null;
 }
 
 export interface JoinedMessage {
@@ -117,6 +124,7 @@ export type BotDifficulty = "easy" | "medium" | "hard";
 
 export type ClientMessage =
   | { type: "create_table"; nickname: string }
+  | { type: "create_daily_table"; nickname: string }
   | { type: "join_table"; roomCode: string; nickname: string }
   | { type: "rejoin"; sessionToken: string }
   | { type: "start_game" }
@@ -136,6 +144,7 @@ export type ClientMessage =
 // union, so this file is the only place either list is hand-maintained).
 export const CLIENT_MESSAGE_TYPES = [
   "create_table",
+  "create_daily_table",
   "join_table",
   "rejoin",
   "start_game",

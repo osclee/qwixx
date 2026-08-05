@@ -9,15 +9,18 @@ import {
   hasAnyLegalWhiteMove,
   IllegalMoveError,
   marksInRow,
+  presetRoll,
   resolveTurn,
   rollDice,
   rowScore,
   type Color,
+  type FullDiceRoll,
   type GameState,
 } from "@quixx/engine";
 import { chooseColorMove, chooseWhiteMove, type BotDifficulty } from "./bot.js";
 import type {
   ChatMessage,
+  DailyStatus,
   ErrorMessage,
   EventMessage,
   PublicResult,
@@ -62,6 +65,22 @@ export interface TableDeps {
   botMoveDelayMs?: { min: number; max: number };
   /** Injected so tests can make bot move selection deterministic. Returns a value in [0, 1). */
   botRandom?: () => number;
+  /**
+   * When set, turns are dealt from this fixed schedule (indexed by
+   * `state.turnSeq`) instead of drawn live from `rollOne` — used by the
+   * daily challenge so every player sees the exact same roll on turn N
+   * regardless of what either side has locked so far. See `presetRoll` in
+   * @quixx/engine for why turn-indexed lookup (rather than feeding a seeded
+   * die into `rollDice`) is what makes that guarantee hold.
+   */
+  presetRolls?: FullDiceRoll[];
+}
+
+/** Set via `configureDaily`; identifies a table as a daily-challenge game and who's who. */
+interface DailyInfo {
+  dateKey: string;
+  humanPlayerId: string;
+  botPlayerId: string;
 }
 
 const DEFAULT_ROLL_MS = 10_000;
@@ -100,6 +119,8 @@ export class Table {
   private readonly onEmpty: ((roomCode: string) => void) | undefined;
   private readonly botMoveDelayMs: { min: number; max: number };
   private readonly botRandom: () => number;
+  private readonly presetRolls: FullDiceRoll[] | undefined;
+  private daily: DailyInfo | null = null;
 
   constructor(roomCode: string, deps: TableDeps) {
     this.roomCode = roomCode;
@@ -112,7 +133,27 @@ export class Table {
     this.onEmpty = deps.onEmpty;
     this.botMoveDelayMs = deps.botMoveDelayMs ?? DEFAULT_BOT_DELAY_MS;
     this.botRandom = deps.botRandom ?? Math.random;
+    this.presetRolls = deps.presetRolls;
     this.createdAt = this.now();
+  }
+
+  /**
+   * Marks this table as a daily-challenge game. Host-agnostic and not part
+   * of the public ws protocol — called once by the registry right after
+   * seating the human and bot, before `startGame`.
+   *
+   * Known limitation: `daily` and `presetRolls` are in-memory only, not
+   * part of `StoredTable` — a server restart mid-daily-attempt rehydrates
+   * the table as a normal (non-daily) game with live crypto dice instead of
+   * preserving the preset schedule. Acceptable for a short single-player
+   * session; not worth a store-schema migration for this edge case.
+   */
+  configureDaily(
+    dateKey: string,
+    humanPlayerId: string,
+    botPlayerId: string,
+  ): void {
+    this.daily = { dateKey, humanPlayerId, botPlayerId };
   }
 
   // ---------- Seats / lobby ----------
@@ -283,7 +324,16 @@ export class Table {
 
   // ---------- Game start ----------
 
-  startGame(requesterId: string): { ok: true } | { ok: false; error: string } {
+  /**
+   * `opts.order`, when given, must be exactly the current seats' playerIds
+   * (any permutation) and is used verbatim as turn order instead of the
+   * usual random shuffle — used by the daily challenge to force the bot to
+   * go first (its "advantaged position") rather than leaving it to chance.
+   */
+  startGame(
+    requesterId: string,
+    opts?: { order?: string[] },
+  ): { ok: true } | { ok: false; error: string } {
     if (this.lobby !== "LOBBY")
       return { ok: false, error: "Game already started" };
     if (requesterId !== this.hostId)
@@ -292,10 +342,14 @@ export class Table {
       return { ok: false, error: `Need at least ${MIN_SEATS} players` };
     }
 
-    const order = shuffle(
-      this.seats.map((s) => s.playerId),
-      this.rollOne,
-    );
+    const seatIds = this.seats.map((s) => s.playerId);
+    const fixedOrder =
+      opts?.order &&
+      opts.order.length === seatIds.length &&
+      seatIds.every((id) => opts.order?.includes(id))
+        ? opts.order
+        : null;
+    const order = fixedOrder ?? shuffle(seatIds, this.rollOne);
     this.state = createGame(order);
     this.lobby = "IN_PROGRESS";
     this.logEvent(
@@ -429,7 +483,14 @@ export class Table {
     this.clearTimer();
     const state = this.requireState();
     if (state.phase !== "ROLLING") return; // already rolled (race between click and timer)
-    state.roll = rollDice(state.diceInPlay, this.rollOne);
+    if (this.presetRolls) {
+      const entry =
+        this.presetRolls[state.turnSeq] ??
+        (this.presetRolls[this.presetRolls.length - 1] as FullDiceRoll);
+      state.roll = presetRoll(state.diceInPlay, entry);
+    } else {
+      state.roll = rollDice(state.diceInPlay, this.rollOne);
+    }
     this.enterWhitePhase();
   }
 
@@ -796,6 +857,37 @@ export class Table {
     }
   }
 
+  /**
+   * Computes the daily-challenge status for the wire, or null for a normal
+   * table. `result` stays null until the game actually finishes; turn count
+   * is derived from `seatOrder`/`turnSeq` rather than a separate counter,
+   * since both are already part of the serialized GameState and so survive
+   * a restart for free.
+   */
+  private computeDailyStatus(): DailyStatus | null {
+    if (!this.daily) return null;
+    const state = this.state;
+    if (!state?.finished || !state.results) {
+      return { dateKey: this.daily.dateKey, result: null };
+    }
+
+    const { humanPlayerId, botPlayerId } = this.daily;
+    const n = state.seatOrder.length;
+    let playerTurns = 0;
+    for (let i = 0; i <= state.turnSeq; i++) {
+      if (state.seatOrder[i % n] === humanPlayerId) playerTurns++;
+    }
+    const humanTotal =
+      state.results.find((r) => r.playerId === humanPlayerId)?.total ?? 0;
+    const botTotal =
+      state.results.find((r) => r.playerId === botPlayerId)?.total ?? 0;
+
+    return {
+      dateKey: this.daily.dateKey,
+      result: { won: humanTotal > botTotal, playerTurns },
+    };
+  }
+
   buildSnapshot(forPlayerId: string): SnapshotMessage {
     const state = this.state;
     const sheets: PublicSheet[] = this.seats.map((seat) => {
@@ -859,6 +951,7 @@ export class Table {
       serverNow: this.now(),
       results,
       whiteSubmitted: state ? Object.keys(state.pendingWhite) : [],
+      daily: this.computeDailyStatus(),
     };
   }
 

@@ -97,6 +97,20 @@ export function registerWebSocketRoute(
           );
           break;
         }
+        case "create_daily_table": {
+          const { table, sessionToken, playerId } =
+            registry.createDailyTable(msg.nickname);
+          bind(table, playerId);
+          ws.send(
+            JSON.stringify({
+              type: "joined",
+              sessionToken,
+              roomCode: table.roomCode,
+              playerId,
+            }),
+          );
+          break;
+        }
         case "join_table": {
           const res = registry.joinTable(msg.roomCode, msg.nickname);
           if (!res.ok) {

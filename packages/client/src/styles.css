@@ -257,6 +257,76 @@ button {
   text-transform: uppercase;
 }
 
+.lobby__nickname {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  font-weight: 500;
+  margin-bottom: 1.1rem;
+}
+.lobby__nickname input {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  color: var(--text);
+  font-size: 1rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.lobby__nickname input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.15);
+}
+
+.lobby__daily {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.lobby__daily-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.lobby__daily-btn {
+  width: 100%;
+}
+.lobby__daily-done p {
+  margin: 0 0 0.4rem;
+}
+.lobby__daily-countdown {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+.lobby__daily-history {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.lobby__daily-history summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.lobby__daily-history ul {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.lobby__daily-history li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
 .lobby__error {
   color: var(--red);
   margin-top: 1rem;
@@ -1100,6 +1170,16 @@ button {
 .game-over__table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.game-over__daily-headline {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.game-over__daily-history {
+  margin-top: 1rem;
 }
 
 .game-over__title {

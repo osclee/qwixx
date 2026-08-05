@@ -116,7 +116,7 @@ export function Table({
               View results
             </button>
           )}
-          {isHost && snapshot.phase !== "FINISHED" && (
+          {isHost && !snapshot.daily && snapshot.phase !== "FINISHED" && (
             <button
               type="button"
               className="btn btn--ghost btn--small"
@@ -216,7 +216,9 @@ export function Table({
             results={snapshot.results}
             you={you}
             isHost={snapshot.hostPlayerId === you}
-            roomCode={snapshot.roomCode}
+            {...(snapshot.daily
+              ? { daily: snapshot.daily }
+              : { roomCode: snapshot.roomCode })}
             onClose={() => setGameOverDismissed(true)}
             onNewGame={() => conn.newGame()}
           />

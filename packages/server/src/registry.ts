@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { getDailyConfig } from "./daily.js";
 import { Table, type TableDeps } from "./table.js";
 import type { GameStore } from "./store/index.js";
 
@@ -66,6 +67,52 @@ export class TableRegistry {
     const sessionToken = randomUUID();
     table.addSeat(playerId, nickname, sessionToken);
     this.sessions.set(sessionToken, { roomCode, playerId });
+    return { table, sessionToken, playerId };
+  }
+
+  /**
+   * Creates and immediately starts a 1-human-vs-1-bot daily-challenge
+   * table: deterministic dice for today's UTC date (see daily.ts), a
+   * "hard"-difficulty bot seated first (its structural advantage), no
+   * lobby/waiting-room step — matches "dailies are always single player".
+   */
+  createDailyTable(nickname: string): {
+    table: Table;
+    sessionToken: string;
+    playerId: string;
+  } {
+    const { dateKey, rollSchedule, botRandom } = getDailyConfig();
+    const roomCode = this.newRoomCode();
+    const table = new Table(roomCode, {
+      store: this.deps.store,
+      ...this.deps.makeTableDeps(),
+      presetRolls: rollSchedule,
+      botRandom,
+      onEmpty: (code) => this.destroyTable(code),
+    });
+    this.tables.set(roomCode, table);
+    this.scheduleIdleReap(roomCode);
+
+    const playerId = randomUUID();
+    const sessionToken = randomUUID();
+    table.addSeat(playerId, nickname, sessionToken);
+    this.sessions.set(sessionToken, { roomCode, playerId });
+
+    const botResult = table.addBotSeat(playerId, "hard");
+    if (!botResult.ok) {
+      throw new Error(`Failed to seat the daily bot: ${botResult.error}`);
+    }
+    table.configureDaily(dateKey, playerId, botResult.playerId);
+
+    const startResult = table.startGame(playerId, {
+      order: [botResult.playerId, playerId],
+    });
+    if (!startResult.ok) {
+      throw new Error(
+        `Failed to start the daily challenge: ${startResult.error}`,
+      );
+    }
+
     return { table, sessionToken, playerId };
   }
 

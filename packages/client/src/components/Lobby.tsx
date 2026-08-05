@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ConnectionStatus, GameConnection } from "../net/socket";
 import type { ErrorMessage } from "../net/protocol";
 import {
@@ -6,6 +6,12 @@ import {
   getStoredSessionToken,
   setStoredNickname,
 } from "../net/session";
+import {
+  getDailyHistory,
+  getTodayResult,
+  msUntilNextUtcMidnight,
+  todayDateKey,
+} from "../net/daily";
 
 interface LobbyProps {
   conn: GameConnection;
@@ -14,10 +20,25 @@ interface LobbyProps {
   onPlayLocal: () => void;
 }
 
+function formatCountdown(ms: number): string {
+  const totalMinutes = Math.max(0, Math.ceil(ms / 60_000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}h ${minutes}m`;
+}
+
 export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
   const [nickname, setNickname] = useState(getStoredNickname());
   const [roomCode, setRoomCode] = useState("");
   const [mode, setMode] = useState<"create" | "join">("create");
+  const [, setTick] = useState(0);
+
+  // Re-render once a minute so the "next challenge in Xh Ym" countdown and
+  // the day-rollover check (todayDateKey) stay live for a tab left open.
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const connected = status === "open";
   const trimmedNickname = nickname.trim();
@@ -26,6 +47,11 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
     trimmedNickname.length > 0 &&
     (mode === "create" || roomCode.trim().length >= 4);
   const canRejoin = connected && getStoredSessionToken() !== null;
+
+  const dateKey = todayDateKey();
+  const todayResult = getTodayResult(dateKey);
+  const dailyHistory = getDailyHistory();
+  const canPlayDaily = connected && trimmedNickname.length > 0 && !todayResult;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,6 +62,12 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
     } else {
       conn.joinTable(roomCode.trim(), trimmedNickname);
     }
+  }
+
+  function playDaily() {
+    if (!canPlayDaily) return;
+    setStoredNickname(trimmedNickname);
+    conn.createDailyTable(trimmedNickname);
   }
 
   return (
@@ -61,6 +93,62 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
           </button>
         )}
 
+        <label className="lobby__nickname">
+          Nickname
+          <input
+            value={nickname}
+            maxLength={20}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder="Your name"
+          />
+        </label>
+
+        <div className="lobby__daily">
+          <h2 className="lobby__daily-title">
+            <span aria-hidden="true">🗓️</span> Daily Challenge
+          </h2>
+          {todayResult ? (
+            <div className="lobby__daily-done">
+              <p>
+                {todayResult.won
+                  ? `✅ You beat today's bot in ${todayResult.playerTurns} turn${todayResult.playerTurns === 1 ? "" : "s"}!`
+                  : "❌ The bot won today's challenge."}
+              </p>
+              <p className="lobby__daily-countdown">
+                Next challenge in {formatCountdown(msUntilNextUtcMidnight())}
+              </p>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn btn--primary lobby__daily-btn"
+              disabled={!canPlayDaily}
+              onClick={playDaily}
+            >
+              Play today's challenge
+            </button>
+          )}
+          {dailyHistory.length > 0 && (
+            <details className="lobby__daily-history">
+              <summary>Score history ({dailyHistory.length})</summary>
+              <ul>
+                {dailyHistory.slice(0, 14).map((entry) => (
+                  <li key={entry.dateKey}>
+                    <span>{entry.dateKey}</span>
+                    <span>
+                      {entry.won ? `${entry.playerTurns} turns` : "Loss"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+
+        <div className="lobby__divider">
+          <span>or</span>
+        </div>
+
         <div className="lobby__tabs">
           <button
             type="button"
@@ -79,15 +167,6 @@ export function Lobby({ conn, status, error, onPlayLocal }: LobbyProps) {
         </div>
 
         <form onSubmit={submit} className="lobby__form">
-          <label>
-            Nickname
-            <input
-              value={nickname}
-              maxLength={20}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="Your name"
-            />
-          </label>
           {mode === "join" && (
             <label>
               Room code

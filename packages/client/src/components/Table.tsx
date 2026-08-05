@@ -15,6 +15,7 @@ import { EventLog } from "./EventLog";
 import { ChatPanel } from "./ChatPanel";
 import { GameOver } from "./GameOver";
 import { RollModal } from "./RollModal";
+import { DiceIcon } from "./Icons";
 
 interface TableProps {
   conn: GameConnection;
@@ -102,7 +103,7 @@ export function Table({
       <header className="table__header">
         <div className="table__brand">
           <span className="table__logo" aria-hidden="true">
-            🎲
+            <DiceIcon />
           </span>
           <span className="table__room-code">Room {snapshot.roomCode}</span>
         </div>

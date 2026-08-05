@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { GameHistoryResponse } from "../net/protocol";
+import { RankIcon, TicketIcon } from "./Icons";
 
 interface GameHistoryProps {
   roomCode: string;
@@ -9,8 +10,6 @@ type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "ready"; history: GameHistoryResponse };
-
-const RANK_MEDAL: Record<number, string> = { 1: "🏆", 2: "🥈", 3: "🥉" };
 
 export function GameHistory({ roomCode }: GameHistoryProps) {
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -37,7 +36,7 @@ export function GameHistory({ roomCode }: GameHistoryProps) {
     <div className="game-history">
       <div className="game-history__card">
         <h2 className="game-history__title">
-          <span aria-hidden="true">📜</span> Game history — {roomCode}
+          <TicketIcon /> Game history — {roomCode}
         </h2>
         {state.status === "loading" && (
           <p className="game-history__status">Loading…</p>
@@ -75,7 +74,7 @@ export function GameHistory({ roomCode }: GameHistoryProps) {
                         }
                       >
                         <td className="game-history__rank">
-                          {RANK_MEDAL[r.rank] ?? `#${r.rank}`}
+                          <RankIcon rank={r.rank} />
                         </td>
                         <td>{r.nickname}</td>
                         <td>{r.rowScores.red}</td>

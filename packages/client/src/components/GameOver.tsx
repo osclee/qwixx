@@ -2,6 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import type { DailyStatus, PublicResult, PublicSheet } from "../net/protocol";
 import { getDailyHistory, saveDailyResult } from "../net/daily";
 import { buildShareText, copyToClipboard } from "../net/dailyShare";
+import {
+  CalendarIcon,
+  ClipboardIcon,
+  CloseIcon,
+  FlagIcon,
+  RankIcon,
+  TrophyIcon,
+  WalkSignalIcon,
+} from "./Icons";
 
 interface GameOverProps {
   results: PublicResult[];
@@ -16,8 +25,6 @@ interface GameOverProps {
   onClose: () => void;
   onNewGame: () => void;
 }
-
-const RANK_MEDAL: Record<number, string> = { 1: "🏆", 2: "🥈", 3: "🥉" };
 
 export function GameOver({
   results,
@@ -91,15 +98,21 @@ export function GameOver({
             onClick={onClose}
             aria-label="Close"
           >
-            ✕
+            <CloseIcon />
           </button>
           <h2 className="game-over__title">
-            <span aria-hidden="true">🗓️</span> Daily Challenge
+            <CalendarIcon /> Daily Challenge
           </h2>
           <p className="game-over__daily-headline">
-            {dailyResult.won
-              ? `🏆 You beat the bot in ${dailyResult.playerTurns} turn${dailyResult.playerTurns === 1 ? "" : "s"}!`
-              : "The bot won today's challenge — try again tomorrow."}
+            {dailyResult.won ? (
+              <>
+                <TrophyIcon className="icon--gold" /> You beat the bot in{" "}
+                {dailyResult.playerTurns} turn
+                {dailyResult.playerTurns === 1 ? "" : "s"}!
+              </>
+            ) : (
+              "The bot won today's challenge — try again tomorrow."
+            )}
           </p>
           <div className="game-over__table-wrap">
             <table>
@@ -127,7 +140,7 @@ export function GameOver({
                       .join(" ")}
                   >
                     <td className="game-over__rank">
-                      {RANK_MEDAL[r.rank] ?? `#${r.rank}`}
+                      <RankIcon rank={r.rank} />
                     </td>
                     <td>{r.nickname}</td>
                     <td>{r.rowScores.red}</td>
@@ -168,7 +181,15 @@ export function GameOver({
               disabled={!shareText}
               onClick={handleCopy}
             >
-              {copied ? "✅ Copied!" : "📋 Copy score"}
+              {copied ? (
+                <>
+                  <WalkSignalIcon /> Copied!
+                </>
+              ) : (
+                <>
+                  <ClipboardIcon /> Copy score
+                </>
+              )}
             </button>
             <button
               type="button"
@@ -192,10 +213,10 @@ export function GameOver({
           onClick={onClose}
           aria-label="Close"
         >
-          ✕
+          <CloseIcon />
         </button>
         <h2 className="game-over__title">
-          <span aria-hidden="true">🏁</span> Game over
+          <FlagIcon /> Game over
         </h2>
         <div className="game-over__table-wrap">
           <table>
@@ -223,7 +244,7 @@ export function GameOver({
                     .join(" ")}
                 >
                   <td className="game-over__rank">
-                    {RANK_MEDAL[r.rank] ?? `#${r.rank}`}
+                    <RankIcon rank={r.rank} />
                   </td>
                   <td>{r.nickname}</td>
                   <td>{r.rowScores.red}</td>

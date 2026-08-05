@@ -23,8 +23,11 @@ describe("buildShareText", () => {
     const lines = text.split("\n");
     expect(lines[0]).toBe("Qwixx Daily #2026-08-05");
     expect(lines[1]).toBe("💀 Lost to the bot (0 pts)");
-    expect(lines[3]).toBe("🟥0/11  🟨0/11  🟩0/11  🟦0/11");
-    expect(lines[4]).toBe("❌❌❌❌");
+    expect(lines[3]).toBe("🟥0/11");
+    expect(lines[4]).toBe("🟨0/11");
+    expect(lines[5]).toBe("🟩0/11");
+    expect(lines[6]).toBe("🟦0/11");
+    expect(lines[7]).toBe("❌❌❌❌");
   });
 
   it("still reports a non-zero score on a loss", () => {
@@ -55,8 +58,11 @@ describe("buildShareText", () => {
     });
     const lines = text.split("\n");
     expect(lines[1]).toBe("🏆 Beat the bot in 7 turns! (98 pts)");
-    expect(lines[3]).toBe("🟥2/11  🟨0/11  🟩3/11  🟦0/11");
-    expect(lines[4]).toBe("❌⬜⬜⬜");
+    expect(lines[3]).toBe("🟥2/11");
+    expect(lines[4]).toBe("🟨0/11");
+    expect(lines[5]).toBe("🟩3/11");
+    expect(lines[6]).toBe("🟦0/11");
+    expect(lines[7]).toBe("❌⬜⬜⬜");
   });
 
   it("appends a lock icon once a row is locked", () => {
@@ -76,8 +82,8 @@ describe("buildShareText", () => {
       },
       penalties: 0,
     });
-    const summaryLine = text.split("\n")[3];
-    expect(summaryLine).toBe("🟥6/11🔒  🟨0/11  🟩0/11  🟦0/11");
+    const redLine = text.split("\n")[3];
+    expect(redLine).toBe("🟥6/11🔒");
   });
 
   it("uses singular 'turn' for a one-turn win", () => {
@@ -118,6 +124,6 @@ describe("buildShareText", () => {
     });
     // Last line should be the penalty row itself, not a blank line + origin.
     expect(text.endsWith("⬜⬜⬜⬜")).toBe(true);
-    expect(text.split("\n")).toHaveLength(5);
+    expect(text.split("\n")).toHaveLength(8);
   });
 });

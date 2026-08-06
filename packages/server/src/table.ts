@@ -107,8 +107,12 @@ export class Table {
   private eventLog: EventMessage[] = [];
   private chatLog: ChatMessage[] = [];
   private createdAt: number;
-  /** True only immediately after Table.restore(), until the first player reconnects. */
-  private awaitingFirstReconnectAfterRestore = false;
+  /**
+   * Turn loop parked with no timer armed, waiting for a human to show up.
+   * Set on restore (nobody has reconnected yet) and whenever the last
+   * connected human drops out of a live game — see `pauseTurnLoop`.
+   */
+  private paused = false;
 
   private readonly store: GameStore;
   private readonly rollOne: () => number;
@@ -286,12 +290,12 @@ export class Table {
     for (const evt of this.eventLog.slice(-20)) this.sendTo(playerId, evt);
     for (const chat of this.chatLog.slice(-20)) this.sendTo(playerId, chat);
 
-    // A restored table is deliberately left paused (see Table.restore) so it
-    // doesn't auto-cascade through empty-seat turns before anyone comes
-    // back. The first reconnect is what actually resumes the turn loop.
-    if (this.awaitingFirstReconnectAfterRestore) {
-      this.awaitingFirstReconnectAfterRestore = false;
-      this.beginRoll();
+    // A parked table (freshly restored, or emptied of humans mid-game) has
+    // no timer armed and is waiting for exactly this. Bots can't unpark it —
+    // they're the reason it parked instead of playing on by itself.
+    if (this.paused && !seat.isBot) {
+      this.paused = false;
+      this.resumeTurnLoop();
     }
   }
 
@@ -314,11 +318,64 @@ export class Table {
     this.connections.delete(playerId);
     const seat = this.seats.find((s) => s.playerId === playerId);
     if (seat) seat.connected = false;
+    // Losing the last human parks the table instead of advancing it — the
+    // barrier recheck below would otherwise hand the game to the bots.
+    if (this.pauseIfNoHumansLeft()) return;
     // A disconnect can itself be the thing a phase barrier was waiting on —
     // don't just leave it to the timer. If everyone still connected has
     // now answered, or the disconnecting player was the active player
     // stuck in COLOR, resolve immediately.
     this.recheckBarrierAfterDisconnect(playerId);
+  }
+
+  /**
+   * Parks a live game whose last connected human just left, and reports
+   * whether it did.
+   *
+   * `allConnectedHaveAnswered` refuses to treat "nobody connected" as
+   * vacuously satisfied precisely so an empty table can't cascade through
+   * its own turns — but bot seats are permanently `connected`, so at a table
+   * with a bot that guard never engages. The bots answer every barrier
+   * instantly, each absent human auto-passes WHITE and auto-closes COLOR
+   * (taking a penalty for a turn with no crosses), and the game runs itself
+   * to a 4-penalty finish in a couple of seconds. A momentary blip cost the
+   * whole game — and a Daily Challenge attempt, which can't be replayed
+   * until the next UTC day.
+   *
+   * Parking freezes the game exactly where it stands (timers cleared, phase
+   * and any submitted white answers intact) until a human reattaches. There
+   * is deliberately no UI for the paused state: by definition nobody is
+   * watching while it's parked, and whoever comes back finds the game
+   * exactly where they left it.
+   */
+  private pauseIfNoHumansLeft(): boolean {
+    if (this.lobby !== "IN_PROGRESS") return false;
+    if (!this.state || this.state.finished) return false;
+    if (this.seats.some((s) => !s.isBot && s.connected)) return false;
+    this.pauseTurnLoop();
+    return true;
+  }
+
+  private pauseTurnLoop(): void {
+    this.clearTimer();
+    this.clearBotTimers();
+    this.phaseDeadline = null;
+    this.paused = true;
+  }
+
+  /**
+   * Picks the turn loop back up in whatever phase it was parked in, without
+   * re-running that phase's entry side effects — re-entering WHITE from the
+   * top would clear `pendingWhite` and hand anyone who already crossed the
+   * white sum this turn a second free cross, since white crosses are applied
+   * on submission rather than at phase close (see `submitWhite`).
+   */
+  private resumeTurnLoop(): void {
+    const state = this.state;
+    if (!state || state.finished) return;
+    if (state.phase === "WHITE") this.armWhitePhase();
+    else if (state.phase === "COLOR") this.enterColorPhase();
+    else this.beginRoll();
   }
 
   private recheckBarrierAfterDisconnect(playerId: string): void {
@@ -520,7 +577,6 @@ export class Table {
   }
 
   private enterWhitePhase(): void {
-    this.clearBotTimers();
     const state = this.requireState();
     state.phase = "WHITE";
     state.pendingWhite = {};
@@ -536,6 +592,22 @@ export class Table {
       }
     }
 
+    this.armWhitePhase();
+  }
+
+  /**
+   * Schedules the bots still owing an answer and arms the phase timer, for a
+   * WHITE phase whose `pendingWhite` is already set up. Split out of
+   * `enterWhitePhase` so `resumeTurnLoop` can re-arm a parked phase without
+   * wiping the answers already in it.
+   */
+  private armWhitePhase(): void {
+    this.clearBotTimers();
+    const state = this.requireState();
+    const roll = state.roll;
+    if (!roll) throw new Error("armWhitePhase without a roll");
+    const sumWhite = roll.w1 + roll.w2;
+
     for (const seat of this.seats) {
       if (!seat.isBot || state.pendingWhite[seat.playerId] !== undefined)
         continue;
@@ -543,8 +615,8 @@ export class Table {
       if (!sheet) continue;
       // A null move here always means the bot itself chose to pass (hard
       // mode only — a genuinely legal-move-less bot seat was already
-      // auto-passed by the loop above), so schedule an explicit pass rather
-      // than silently doing nothing and leaving it to the slow
+      // auto-passed when the phase was entered), so schedule an explicit
+      // pass rather than silently doing nothing and leaving it to the slow
       // whitePhaseMs fallback.
       const move = chooseWhiteMove(
         sheet,
@@ -994,13 +1066,13 @@ export class Table {
    * Rebuilds a Table from its last persisted snapshot after a server
    * restart. The snapshot is always captured right at the start of a fresh
    * turn (see resolveAndContinue — phase is 'ROLLING' with no pending
-   * decisions at the instant it's saved), so resuming only ever needs
-   * beginRoll(): no phase-specific reconstruction. All seats start
-   * disconnected, and the turn loop deliberately stays paused (see
-   * `awaitingFirstReconnectAfterRestore`) until the first player calls
-   * `rejoin` — otherwise, with zero seats connected, every phase would
-   * auto-close immediately and the game would cascade to completion before
-   * any client ever saw the restored state.
+   * decisions at the instant it's saved), so `resumeTurnLoop` only ever has
+   * a ROLLING phase to pick up here: no phase-specific reconstruction. All
+   * human seats start disconnected, and the turn loop deliberately starts
+   * parked (`paused`) until the first player calls `rejoin` — otherwise,
+   * with nobody watching, every phase would auto-close immediately and the
+   * game would cascade to completion before any client ever saw the
+   * restored state.
    */
   static restore(
     roomCode: string,
@@ -1024,11 +1096,11 @@ export class Table {
     table.state = deserializeGameState(
       JSON.parse(stored.stateJson) as SerializedGameState,
     );
-    // Stay paused until the first player reconnects (see attachConnection) —
-    // otherwise every phase would auto-close immediately with zero seats
+    // Stay parked until the first player reconnects (see attachConnection) —
+    // otherwise every phase would auto-close immediately with no humans
     // connected, and the whole game would cascade to completion before any
     // client ever sees it.
-    table.awaitingFirstReconnectAfterRestore = true;
+    table.paused = true;
     return table;
   }
 }

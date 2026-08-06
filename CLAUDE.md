@@ -129,6 +129,26 @@ from cascading through empty-seat turns — this matters both when everyone
 disconnects at once and when a table is rehydrated from storage (see
 below).
 
+That guard isn't enough on its own, because bot seats are permanently
+`connected` and so satisfy every barrier by themselves. A live game whose
+**last connected human** drops is therefore *parked* rather than advanced
+(`pauseIfNoHumansLeft` in `detachConnection`): timers cleared, phase and any
+already-submitted white answers left exactly as they stand, `paused = true`.
+The next human to `attachConnection` unparks it via `resumeTurnLoop`. Without
+this, an absent human auto-passes WHITE and auto-closes COLOR every turn
+while the bots answer instantly, and a table with a bot runs itself to a
+4-penalty finish within a couple of seconds of a network blip — which for
+the Daily Challenge means losing the day's only attempt.
+
+`paused` is the same flag a restored table starts in, so restore and
+"everyone left" share one resume path. `resumeTurnLoop` dispatches on the
+current phase and deliberately re-arms WHITE via `armWhitePhase` rather than
+`enterWhitePhase`: the latter resets `pendingWhite`, which — since white
+crosses are applied on submission, not at phase close — would hand anyone
+who already crossed this turn a second free cross. There is intentionally no
+wire field or UI for the paused state; nobody is connected to see it, and a
+returning player finds the game exactly where they left it.
+
 Because disconnects drive real state changes, `detachConnection` takes the
 `OutSocket` that's closing and ignores the call unless that socket is still
 the one registered for the seat. A player whose connection went half-open

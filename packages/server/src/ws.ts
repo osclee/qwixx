@@ -50,6 +50,12 @@ export function registerWebSocketRoute(
   app.get("/ws", { websocket: true }, (ws: WebSocket) => {
     let boundTable: Table | null = null;
     let boundPlayerId: string | null = null;
+    // One adapter per connection, created up front rather than per bind, so
+    // it doubles as this socket's identity in the table's connection map —
+    // that's what lets Table.detachConnection tell "the socket that is
+    // currently attached just closed" apart from "a socket this player
+    // already replaced by reconnecting just closed".
+    const out = socketAdapter(ws);
     const limiter = new RateLimiter(rateLimitOpts);
 
     // Native ping/pong for server-side dead-peer detection, plus an
@@ -76,9 +82,23 @@ export function registerWebSocketRoute(
     ws.on("close", () => clearInterval(heartbeat));
 
     const bind = (table: Table, playerId: string) => {
+      // Rebinding this socket to a *different* seat (e.g. leaving a table and
+      // creating a new one on the same connection) would otherwise leave the
+      // old seat marked connected against a socket that will never be
+      // detached from it — its close handler only ever detaches the last
+      // binding. Rebinding to the same seat is just a repeat rejoin and must
+      // not detach: that would flip the seat absent and re-trip the phase
+      // barriers on a player who never went anywhere.
+      if (
+        boundTable &&
+        boundPlayerId &&
+        (boundTable !== table || boundPlayerId !== playerId)
+      ) {
+        boundTable.detachConnection(boundPlayerId, out);
+      }
       boundTable = table;
       boundPlayerId = playerId;
-      table.attachConnection(playerId, socketAdapter(ws));
+      table.attachConnection(playerId, out);
     };
 
     ws.on("message", (raw: Buffer | string) => {
@@ -259,7 +279,7 @@ export function registerWebSocketRoute(
         case "leave_table": {
           if (!boundTable || !boundPlayerId) return unbound();
           boundTable.leaveLobby(boundPlayerId);
-          boundTable.detachConnection(boundPlayerId);
+          boundTable.detachConnection(boundPlayerId, out);
           boundTable = null;
           boundPlayerId = null;
           break;
@@ -306,8 +326,11 @@ export function registerWebSocketRoute(
     });
 
     ws.on("close", () => {
+      // Pass `out` so a socket that's already been superseded by the same
+      // player reconnecting closes quietly instead of detaching its
+      // replacement (see Table.detachConnection).
       if (boundTable && boundPlayerId)
-        boundTable.detachConnection(boundPlayerId);
+        boundTable.detachConnection(boundPlayerId, out);
     });
   });
 }

@@ -295,7 +295,22 @@ export class Table {
     }
   }
 
-  detachConnection(playerId: string): void {
+  /**
+   * Drops a player's connection. `socket` identifies *which* connection is
+   * closing and must be passed by anything reacting to a socket's own close
+   * event: a player who reconnects while their previous socket is merely
+   * half-open (laptop sleep, network handoff, an idle-connection reap
+   * upstream) has a live socket attached here by the time the dead one
+   * finally reports closed, and that late close must not tear the live one
+   * down. Without the check, the player stays seated but unreachable —
+   * every subsequent broadcast skips them, so their screen freezes on the
+   * last frame they got while the game plays on without them.
+   *
+   * Omit `socket` only for a deliberate detach that isn't tied to a
+   * particular socket's lifetime (e.g. an explicit `leave_table`).
+   */
+  detachConnection(playerId: string, socket?: OutSocket): void {
+    if (socket && this.connections.get(playerId) !== socket) return;
     this.connections.delete(playerId);
     const seat = this.seats.find((s) => s.playerId === playerId);
     if (seat) seat.connected = false;

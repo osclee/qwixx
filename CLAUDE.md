@@ -129,6 +129,19 @@ from cascading through empty-seat turns — this matters both when everyone
 disconnects at once and when a table is rehydrated from storage (see
 below).
 
+Because disconnects drive real state changes, `detachConnection` takes the
+`OutSocket` that's closing and ignores the call unless that socket is still
+the one registered for the seat. A player whose connection went half-open
+(laptop sleep, network handoff, an idle reap upstream) reconnects and
+attaches a *new* socket before the dead one ever reports closed, so the
+late close would otherwise evict the live connection: the seat stays in the
+game but drops out of `connections`, every broadcast skips it, and that
+player's screen freezes on its last frame while play continues without
+them. `ws.ts` therefore builds one `socketAdapter` per connection and passes
+it to every detach — pass it from anything reacting to a socket's own close;
+omit it only for a deliberate, socket-independent detach like
+`leave_table`.
+
 Rule detail worth knowing: locking a row (crossing the terminal cell) sets
 `row.locked` on that sheet immediately, but the die isn't removed from the
 shared pool (`removedColors`) until `resolveTurn` runs at the end of the

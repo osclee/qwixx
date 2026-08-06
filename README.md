@@ -2,9 +2,24 @@
 
 Online multiplayer Qwixx: a browser client (React) talking over WebSocket to
 an authoritative Node/Fastify server, with a shared rule engine used by both
-sides. Supports bot players (easy/medium/hard) for filling empty seats.
+sides.
 
 Inspired by https://gamewright.com/product/Qwixx!
+
+## Features
+
+- **Online multiplayer** — create or join a table by code, 2-5 players per
+  table, in-game chat, live connection status.
+- **Bot players** (easy/medium/hard difficulty) can fill empty seats in an
+  online table — see `packages/server/src/bot.ts` for the move-ranking
+  logic behind each difficulty.
+- **Daily Challenge** — a single-player game against a "hard" bot, using
+  dice rolls seeded deterministically from the UTC date so every player
+  gets the same rolls that day (`packages/server/src/daily.ts`), with a
+  Wordle-style shareable result and local score history.
+- **Local multiplayer (pass & play)** — a full game driven entirely in the
+  browser with no server involved, for playing on one shared device
+  (`packages/client/src/local/localGame.ts`).
 
 ```
 packages/
@@ -27,8 +42,11 @@ This starts the Fastify server on `:3000` and the Vite dev server on
 `http://localhost:5173`.
 
 ```bash
-npm test        # engine + server test suites
-npm run build    # builds engine, server, and client
+npm test             # engine + server + client test suites
+npm run typecheck    # tsc --noEmit across all three packages
+npm run build         # builds engine, server, and client
+npm run lint          # eslint across the repo
+npm run format:check  # prettier --check
 ```
 
 ## Architecture notes
@@ -46,6 +64,16 @@ npm run build    # builds engine, server, and client
   native module fails to load, the server automatically falls back to an
   in-memory-only store (games won't survive a restart, but the server still
   starts) — see `packages/server/src/store/sqlite.ts`.
+- The server pings every WebSocket connection on an interval (native
+  ping/pong plus an app-level `ping` message) to detect dead peers and
+  drive the client's connection-status indicator — see
+  `packages/server/src/ws.ts`.
+- Inbound WebSocket messages are token-bucket rate-limited per connection
+  (`packages/server/src/rateLimiter.ts`).
+
+See `CLAUDE.md` for a deeper tour of the turn-phase state machine, wire
+protocol, and other architectural details worth knowing before making
+non-trivial changes.
 
 ### Environment variables (server)
 
@@ -70,6 +98,27 @@ a single runtime image that runs the Fastify server, which also serves the
 built client's static files — one process, one port, no separate frontend
 host needed. The container writes its SQLite file to `/data`; mount a
 volume there for persistence across restarts.
+
+## Contributing
+
+- Read `CLAUDE.md` first — it documents non-obvious invariants (turn-phase
+  ordering, the duplicated wire protocol, disconnect handling) that are easy
+  to break without realizing it.
+- Remember the build order: `@quixx/server` and `@quixx/client` resolve
+  `@quixx/engine` via its built `dist/`, not source. Run
+  `npm run build -w @quixx/engine` (or a full `npm run build`) after
+  editing the engine before the change is visible elsewhere, including
+  under `npm run dev`.
+- If you add or change a WebSocket message type, update both
+  `packages/server/src/protocol.ts` (zod schemas, source of truth) and
+  `packages/client/src/net/protocol.ts` (mirrored plain types) — nothing
+  enforces they stay in sync.
+- Before opening a PR, make sure `npm run typecheck`, `npm test`, and
+  `npm run lint` all pass — the same three checks (plus a full build) run
+  in CI (`.github/workflows/ci.yml`) on every push and pull request.
+- Prefer adding a test in the relevant package's `test/` (engine, server)
+  or alongside the component/module (client, colocated `*.test.ts(x)`)
+  over manual verification alone.
 
 ## Deployment
 

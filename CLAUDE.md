@@ -8,6 +8,30 @@ Online multiplayer Qwixx (the dice game): a React client talking over
 WebSocket to an authoritative Node/Fastify server, with a pure rule engine
 shared by both sides. npm workspaces monorepo, three packages:
 
+Beyond the core online-multiplayer loop, the client also offers:
+
+- **Bot players** (easy/medium/hard) that can fill empty seats in an online
+  table — move selection lives in `packages/server/src/bot.ts` ("hard" is a
+  one-ply expectimax over exact dice odds; the server is authoritative for
+  bot moves same as human ones, there's no separate bot-side rule copy).
+- **Daily Challenge**: a single-player game against a "hard" bot with dice
+  rolls deterministically seeded from the UTC date
+  (`packages/server/src/daily.ts`), so every player faces the same rolls
+  that day. The client tracks a shareable, Wordle-style result string and a
+  local score history (`packages/client/src/net/daily.ts`,
+  `dailyShare.ts`).
+- **Local multiplayer ("pass & play")**: a full game driven entirely
+  client-side with no server/WebSocket involved, for one shared device.
+  Reuses `@quixx/engine`'s primitives directly but implements its own,
+  simpler phase machine (`packages/client/src/local/localGame.ts`) — no
+  timers, no bots, no disconnect handling, since everyone's at the same
+  device. Opening a local game or a finished-but-not-exited one takes over
+  the whole screen regardless of the online connection's state (see
+  `App.tsx`).
+- **In-table chat** (`chat_message`) and a per-connection rate limiter
+  (`packages/server/src/rateLimiter.ts`, token bucket) guarding all inbound
+  WebSocket messages.
+
 ```
 packages/
   engine/   @quixx/engine — pure, dependency-free rule engine (rows, legality, scoring, dice)
@@ -22,9 +46,11 @@ Run from the repo root unless noted. Requires Node 20+.
 ```bash
 npm install
 npm run dev              # server on :3000 + Vite client on :5173 (proxies /ws, /api), parallel
-npm test                 # engine + server suites (client has no test suite)
+npm test                 # engine + server + client suites (client uses vitest + jsdom + Testing Library)
 npm run build             # builds engine, then server, then client (order matters — see below)
 npm run typecheck         # tsc --noEmit across all three packages
+npm run lint               # eslint across the repo (flat config, eslint.config.js)
+npm run format:check       # prettier --check; npm run format to write
 ```
 
 Single package / single test file (the `-w` flag targets one workspace):
@@ -32,8 +58,15 @@ Single package / single test file (the `-w` flag targets one workspace):
 ```bash
 npm run test -w @quixx/engine -- test/legal.test.ts
 npm run test -w @quixx/server -- test/roll.test.ts
+npm run test -w @quixx/client -- src/components/Table.test.tsx
 npm run typecheck -w @quixx/client
 ```
+
+CI (`.github/workflows/ci.yml`) runs, in order, an engine build (so
+server/client typecheck can resolve it), `npm run typecheck`, `npm test`,
+then a full `npm run build`, on every push to `master` and every PR. The
+Azure deploy workflow (see Deployment below) calls this same `ci.yml` as a
+prerequisite job before building/pushing the image.
 
 **Build order matters**: `@quixx/server` and `@quixx/client` both import
 `@quixx/engine` as a real workspace dependency resolved via its built
@@ -103,6 +136,14 @@ turn — so the active player can still use a color die in the COLOR phase
 of the same turn it was locked in. This is intentional (Qwixx §6), encoded
 as an engine test (`apply.test.ts`), not a bug.
 
+Bot seats (`seat.isBot`) act through the same phase machine as human
+seats — there's no separate bot code path in `table.ts`, only extra
+branches (e.g. around lines 469, 525, 666) that call into
+`chooseWhiteMove`/`chooseColorMove` from `bot.ts` instead of waiting on a
+client message. A bot is always "connected" as far as barriers are
+concerned (`connected: !!s.isBot` in the seat's public view), so it never
+blocks a phase from closing or triggers disconnect handling.
+
 ### The wire protocol is duplicated, not shared
 
 `packages/server/src/protocol.ts` (zod-validated, the actual source of
@@ -110,7 +151,11 @@ truth) and `packages/client/src/net/protocol.ts` (plain TS types, manually
 mirrored, no runtime validation) define the same message shapes
 independently — there's no shared protocol package. **If you add or change
 a message type, update both files.** The client file has a comment noting
-this; there's no build-time check that they stay in sync.
+this; there's no build-time check that they stay in sync. Beyond the core
+game actions, the protocol also carries `create_daily_table`, `add_bot` /
+`remove_bot`, `chat_message`, and a periodic server→client `ping` (liveness
+heartbeat, paired with a native WS ping/pong — see `server/src/ws.ts` and
+`client/src/net/socket.ts`).
 
 ### Client state: one external store, not React context
 
@@ -118,10 +163,19 @@ this; there's no build-time check that they stay in sync.
 and is a module-level singleton (`net/useGame.ts`), consumed via
 `useSyncExternalStore`. It reconnects with exponential backoff and
 auto-sends `rejoin` using a session token from `localStorage` on open.
-`App.tsx` routes between `Lobby` / `WaitingRoom` / `Table` purely off
-`snapshot.lobbyState` — there's no client-side route state, so any
-lobbyState transition (start game, game over, rematch back to LOBBY) just
-works by virtue of the next snapshot changing that field.
+Local (pass & play) games have their own analogous singleton store
+(`local/useLocalGame.ts`'s `LocalGameStore`, also via
+`useSyncExternalStore`) that is entirely independent of the WebSocket
+connection.
+
+`App.tsx` checks the local-game store first: an in-progress or
+just-finished local game (or the local setup screen) takes over the whole
+screen regardless of what the online connection is doing. Only when
+there's no local game in play does it fall through to routing between
+`Lobby` / `WaitingRoom` / `Table` purely off `snapshot.lobbyState` — there's
+no other client-side route state, so any lobbyState transition (start
+game, game over, rematch back to LOBBY) just works by virtue of the next
+snapshot changing that field.
 
 Snapshots are trusted at face value with no staleness/ordering check — a
 single WebSocket delivers messages in order, and a fresh reconnect only
@@ -175,6 +229,15 @@ just fires almost instantly. Tests that actually need to exercise the
 ROLLING phase's waiting behavior (`roll.test.ts`) pass a longer value
 explicitly.
 
+Client tests (`packages/client/src/**/*.test.ts(x)`, colocated with the
+code they cover rather than a separate `test/` directory) run under
+`vitest` with `jsdom` + React Testing Library — component tests
+(`Table.test.tsx`, `ScoreSheet.test.tsx`) render against the wire protocol
+shape, and there are plain unit tests for local-game logic
+(`local/localGame.test.ts`), optimistic legal-move highlighting
+(`net/legalMoves.test.ts`), and the daily-challenge share string
+(`net/dailyShare.test.ts`).
+
 **Testing multiplayer manually in one browser**: tabs on the same origin
 share `localStorage`, so opening a second tab to simulate a second player
 will silently auto-rejoin it as the *first* player (via the shared session
@@ -207,4 +270,7 @@ mount, for the single-instance reason above). Deploys are automatic: a
 GitHub Actions workflow
 (`.github/workflows/qwixx-AutoDeployTrigger-...yml`) builds and pushes the
 image to ACR and updates the Container App on every push to `master` — no
-manual deploy steps. See `README.md` for a short summary.
+manual deploy steps. That workflow itself invokes `.github/workflows/ci.yml`
+(typecheck, test, build) as a prerequisite job, so a red CI check blocks
+deploy the same way it blocks a PR. See `README.md` for a short summary,
+including local dev setup and a contributor checklist.
